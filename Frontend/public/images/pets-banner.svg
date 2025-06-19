@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="200" viewBox="0 0 1200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fondo -->
+  <rect width="1200" height="200" fill="#F3F4F6"/>
+  
+  <!-- Perro (silueta simplificada) -->
+  <path d="M400 120c0-30 20-60 50-60s40 20 40 40c0 15-5 25-15 35m-25-15c5 0 10-5 10-10s-5-10-10-10-10 5-10 10 5 10 10 10zm40 0c-5 0-10-5-10-10s5-10 10-10 10 5 10 10-5 10-10 10z" 
+        fill="#9333EA" stroke="#9333EA" stroke-width="2"/>
+  
+  <!-- Gato (silueta simplificada) -->
+  <path d="M700 120c0-30-20-60-50-60s-40 20-40 40c0 15 5 25 15 35m25-15c-5 0-10-5-10-10s5-10 10-10 10 5 10 10-5 10-10 10zm-40 0c5 0 10-5 10-10s-5-10-10-10-10 5-10 10 5 10 10 10z"
+        fill="#9333EA" stroke="#9333EA" stroke-width="2"/>
+  
+  <!-- Texto -->
+  <text x="600" y="160" text-anchor="middle" font-family="Arial" font-size="24" font-weight="bold" fill="#1F2937">
+    Usuarios
+  </text>
+  <text x="600" y="185" text-anchor="middle" font-family="Arial" font-size="16" fill="#6B7280">
+    Administra los usuarios y sus roles en el sistema
+  </text>
+</svg> 
