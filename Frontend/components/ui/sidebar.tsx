@@ -4,6 +4,8 @@ import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { VariantProps, cva } from "class-variance-authority"
 import { PanelLeft } from "lucide-react"
+import Link from "next/link"
+import { usePathname } from "next/navigation"
 
 import { useIsMobile } from "@/hooks/use-mobile"
 import { cn } from "@/lib/utils"
@@ -18,6 +20,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
+import { ScrollArea } from "@/components/ui/scroll-area"
+import { LucideIcon } from "lucide-react"
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state"
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
@@ -734,6 +738,45 @@ const SidebarMenuSubButton = React.forwardRef<
   )
 })
 SidebarMenuSubButton.displayName = "SidebarMenuSubButton"
+
+interface SidebarProps {
+  items: {
+    title: string
+    href: string
+    icon: LucideIcon
+  }[]
+}
+
+export function Sidebar({ items }: SidebarProps) {
+  const pathname = usePathname()
+
+  return (
+    <div className="w-64 border-r bg-background">
+      <ScrollArea className="h-full py-6">
+        <div className="space-y-4">
+          <div className="px-3">
+            <h2 className="mb-2 px-4 text-lg font-semibold">
+              Panel de Grooming
+            </h2>
+            <div className="space-y-1">
+              {items.map((item) => (
+                <Link key={item.href} href={item.href}>
+                  <Button
+                    variant={pathname === item.href ? "secondary" : "ghost"}
+                    className="w-full justify-start"
+                  >
+                    <item.icon className="mr-2 h-4 w-4" />
+                    {item.title}
+                  </Button>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </ScrollArea>
+    </div>
+  )
+}
 
 export {
   Sidebar,

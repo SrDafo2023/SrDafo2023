@@ -2,14 +2,114 @@ import { DashboardHeader } from "@/components/dashboard-header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Button } from "@/components/ui/button"
-import { CalendarIcon, DogIcon, HomeIcon, UsersIcon } from "lucide-react"
+import { CalendarIcon, DogIcon, HomeIcon, UsersIcon, TrendingUpIcon, DollarSignIcon, StarIcon } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
+import {
+  Carousel,
+  CarouselContent,
+  CarouselItem,
+  CarouselNext,
+  CarouselPrevious,
+} from "@/components/ui/carousel"
 
 export default function GroomingDashboard() {
   return (
     <div className="flex flex-col">
       <DashboardHeader role="grooming" title="Panel de Servicios Grooming" />
       <main className="flex-1 space-y-4 p-4 md:p-6">
+        {/* Carousel Section */}
+        <div className="w-full px-12">
+          <Carousel className="w-full">
+            <CarouselContent>
+              {/* Slide 1: Resumen de Ingresos */}
+              <CarouselItem>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <DollarSignIcon className="h-5 w-5 text-green-500" />
+                      Resumen de Ingresos
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-green-600">$1,250</p>
+                        <p className="text-sm text-muted-foreground">Hoy</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-green-600">$8,750</p>
+                        <p className="text-sm text-muted-foreground">Esta Semana</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-green-600">$32,500</p>
+                        <p className="text-sm text-muted-foreground">Este Mes</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+
+              {/* Slide 2: Estadísticas de Servicios */}
+              <CarouselItem>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <TrendingUpIcon className="h-5 w-5 text-blue-500" />
+                      Estadísticas de Servicios
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-blue-600">85%</p>
+                        <p className="text-sm text-muted-foreground">Ocupación</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-blue-600">45</p>
+                        <p className="text-sm text-muted-foreground">Servicios/Semana</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-2xl font-bold text-blue-600">4.8</p>
+                        <p className="text-sm text-muted-foreground">Calificación</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+
+              {/* Slide 3: Servicios Populares */}
+              <CarouselItem>
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <StarIcon className="h-5 w-5 text-yellow-500" />
+                      Servicios Más Populares
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span>Baño y Corte</span>
+                        <Badge variant="secondary">45%</Badge>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Spa Completo</span>
+                        <Badge variant="secondary">30%</Badge>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span>Corte de Uñas</span>
+                        <Badge variant="secondary">25%</Badge>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </CarouselItem>
+            </CarouselContent>
+            <CarouselPrevious />
+            <CarouselNext />
+          </Carousel>
+        </div>
+
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

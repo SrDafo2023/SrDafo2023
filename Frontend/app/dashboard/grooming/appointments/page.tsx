@@ -1,237 +1,165 @@
-import { DashboardHeader } from "@/components/dashboard-header"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+"use client"
+
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { CalendarIcon, PlusIcon, SearchIcon } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Plus, Calendar as CalendarIcon } from "lucide-react"
+import { appointmentService } from "@/lib/appointment-service"
+import { Appointment } from "@/types/appointment.types"
+import { format } from "date-fns"
+import { es } from "date-fns/locale"
+import { AppointmentList } from "@/components/appointments/appointment-list"
+import { AppointmentCalendar } from "@/components/appointments/appointment-calendar"
+import { NewAppointmentDialog } from "@/components/appointments/new-appointment-dialog"
 
 export default function AppointmentsPage() {
-  const appointments = [
-    {
-      id: 1,
-      client: "Juan Pérez",
-      pet: "Firulais",
-      service: "Baño y Corte",
-      date: "2023-06-15",
-      time: "10:00 AM",
-      status: "pending",
-      location: "Av. Principal 123, Ciudad",
-    },
-    {
-      id: 2,
-      client: "María López",
-      pet: "Luna",
-      service: "Spa Completo",
-      date: "2023-06-15",
-      time: "11:30 AM",
-      status: "pending",
-      location: "Calle Secundaria 456, Ciudad",
-    },
-    {
-      id: 3,
-      client: "Carlos Rodríguez",
-      pet: "Rocky",
-      service: "Corte de Uñas",
-      date: "2023-06-15",
-      time: "1:00 PM",
-      status: "in-progress",
-      location: "Plaza Central 789, Ciudad",
-    },
-    {
-      id: 4,
-      client: "Ana Martínez",
-      pet: "Bella",
-      service: "Baño",
-      date: "2023-06-15",
-      time: "2:30 PM",
-      status: "in-progress",
-      location: "Av. Principal 123, Ciudad",
-    },
-    {
-      id: 5,
-      client: "Pedro Sánchez",
-      pet: "Max",
-      service: "Desparasitación",
-      date: "2023-06-15",
-      time: "4:00 PM",
-      status: "completed",
-      location: "Calle Secundaria 456, Ciudad",
-    },
-    {
-      id: 6,
-      client: "Laura Gómez",
-      pet: "Coco",
-      service: "Baño y Corte",
-      date: "2023-06-16",
-      time: "9:30 AM",
-      status: "pending",
-      location: "Plaza Central 789, Ciudad",
-    },
-    {
-      id: 7,
-      client: "Roberto Díaz",
-      pet: "Toby",
-      service: "Spa Completo",
-      date: "2023-06-16",
-      time: "11:00 AM",
-      status: "pending",
-      location: "Av. Principal 123, Ciudad",
-    },
-    {
-      id: 8,
-      client: "Carmen Flores",
-      pet: "Lola",
-      service: "Cuidado Dental",
-      date: "2023-06-16",
-      time: "2:00 PM",
-      status: "pending",
-      location: "Calle Secundaria 456, Ciudad",
-    },
-  ]
+  const [appointments, setAppointments] = useState<Appointment[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState("all")
+  const [dateFilter, setDateFilter] = useState<"today" | "week" | "all">("all")
+  const [showNewAppointmentDialog, setShowNewAppointmentDialog] = useState(false)
+
+  useEffect(() => {
+    loadAppointments()
+  }, [dateFilter])
+
+  const loadAppointments = async () => {
+    try {
+      setLoading(true)
+      let startDate, endDate
+      
+      if (dateFilter === "today") {
+        startDate = new Date()
+        startDate.setHours(0, 0, 0, 0)
+        endDate = new Date()
+        endDate.setHours(23, 59, 59, 999)
+      } else if (dateFilter === "week") {
+        startDate = new Date()
+        startDate.setHours(0, 0, 0, 0)
+        endDate = new Date()
+        endDate.setDate(endDate.getDate() + 7)
+        endDate.setHours(23, 59, 59, 999)
+      }
+
+      let fetchedAppointments
+      if (startDate && endDate) {
+        fetchedAppointments = await appointmentService.getByDateRange(startDate, endDate)
+      } else {
+        fetchedAppointments = await appointmentService.getAll()
+      }
+      setAppointments(fetchedAppointments)
+    } catch (error) {
+      console.error("Error al cargar las citas:", error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const filteredAppointments = appointments.filter(appointment => {
+    const matchesSearch = 
+      appointment.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.petName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.serviceName.toLowerCase().includes(searchTerm.toLowerCase())
+    
+    const matchesStatus = statusFilter === "all" || appointment.status === statusFilter
+
+    return matchesSearch && matchesStatus
+  })
+
+  const handleAppointmentUpdate = async (appointmentId: string, status: string) => {
+    try {
+      await appointmentService.update({
+        id: appointmentId,
+        status: status as any,
+      })
+      await loadAppointments()
+    } catch (error) {
+      console.error("Error al actualizar la cita:", error)
+    }
+  }
 
   return (
-    <div className="flex flex-col">
-      <DashboardHeader role="grooming" title="Gestión de Citas" />
-      <main className="flex-1 space-y-4 p-4 md:p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold tracking-tight">Citas</h2>
-            <p className="text-muted-foreground">Administra las citas de tus clientes</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <PlusIcon className="mr-2 h-4 w-4" />
-              Nueva Cita
-            </Button>
-          </div>
+    <div className="p-6 space-y-6">
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold">Citas</h1>
+          <p className="text-muted-foreground">
+            Administra las citas de tus clientes
+          </p>
         </div>
+        <Button onClick={() => setShowNewAppointmentDialog(true)}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nueva Cita
+        </Button>
+      </div>
 
-        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-          <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-            <div className="relative">
-              <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input type="search" placeholder="Buscar citas..." className="w-full pl-8 md:w-[300px]" />
-            </div>
-            <Select defaultValue="all">
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Estado" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos los estados</SelectItem>
-                <SelectItem value="pending">Pendientes</SelectItem>
-                <SelectItem value="in-progress">En proceso</SelectItem>
-                <SelectItem value="completed">Completadas</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-2 w-full md:w-auto">
-            <Button variant="outline" className="w-full md:w-auto">
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              Hoy
-            </Button>
-            <Button variant="outline" className="w-full md:w-auto">
-              Esta semana
-            </Button>
-          </div>
-        </div>
+      <div className="flex gap-4 items-center">
+        <Input
+          placeholder="Buscar citas..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="max-w-sm"
+        />
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Todos los estados" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todos los estados</SelectItem>
+            <SelectItem value="pending">Pendiente</SelectItem>
+            <SelectItem value="confirmed">Confirmado</SelectItem>
+            <SelectItem value="completed">Completado</SelectItem>
+            <SelectItem value="cancelled">Cancelado</SelectItem>
+            <SelectItem value="no-show">No asistió</SelectItem>
+          </SelectContent>
+        </Select>
+        <Select value={dateFilter} onValueChange={(value: any) => setDateFilter(value)}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Filtrar por fecha" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Todas las fechas</SelectItem>
+            <SelectItem value="today">Hoy</SelectItem>
+            <SelectItem value="week">Esta semana</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
-        <Tabs defaultValue="list" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="list">Lista</TabsTrigger>
-            <TabsTrigger value="calendar">Calendario</TabsTrigger>
-          </TabsList>
-          <TabsContent value="list" className="space-y-4">
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle>Citas Programadas</CardTitle>
-                <CardDescription>Mostrando {appointments.length} citas programadas</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {appointments.map((appointment) => (
-                    <div
-                      key={appointment.id}
-                      className="flex flex-col md:flex-row md:items-center gap-4 p-3 border rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <div className="flex flex-col md:flex-row md:items-center gap-2 mb-2">
-                          <p className="font-medium">{appointment.client}</p>
-                          <Badge
-                            variant="outline"
-                            className={
-                              appointment.status === "pending"
-                                ? "border-yellow-500 text-yellow-700 bg-yellow-50"
-                                : appointment.status === "in-progress"
-                                  ? "border-green-500 text-green-700 bg-green-50"
-                                  : "border-blue-500 text-blue-700 bg-blue-50"
-                            }
-                          >
-                            {appointment.status === "pending"
-                              ? "Pendiente"
-                              : appointment.status === "in-progress"
-                                ? "En proceso"
-                                : "Completado"}
-                          </Badge>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm text-muted-foreground">
-                          <p>
-                            <span className="font-medium">Mascota:</span> {appointment.pet}
-                          </p>
-                          <p>
-                            <span className="font-medium">Servicio:</span> {appointment.service}
-                          </p>
-                          <p>
-                            <span className="font-medium">Fecha:</span> {appointment.date}, {appointment.time}
-                          </p>
-                        </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          <span className="font-medium">Ubicación:</span> {appointment.location}
-                        </p>
-                      </div>
-                      <div className="flex gap-2 self-end md:self-center">
-                        <Button variant="outline" size="sm">
-                          Editar
-                        </Button>
-                        <Button
-                          size="sm"
-                          className={
-                            appointment.status === "pending"
-                              ? "bg-blue-600 hover:bg-blue-700"
-                              : appointment.status === "in-progress"
-                                ? "bg-green-600 hover:bg-green-700"
-                                : "bg-gray-600 hover:bg-gray-700"
-                          }
-                        >
-                          {appointment.status === "pending"
-                            ? "Iniciar"
-                            : appointment.status === "in-progress"
-                              ? "Completar"
-                              : "Ver detalles"}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-          <TabsContent value="calendar" className="space-y-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Calendario de Citas</CardTitle>
-                <CardDescription>Vista mensual de todas las citas programadas</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="h-[600px] bg-muted/20 rounded-md flex items-center justify-center">
-                  Aquí iría un componente de calendario con las citas programadas
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </main>
+      <Tabs defaultValue="list" className="w-full">
+        <TabsList>
+          <TabsTrigger value="list">Lista</TabsTrigger>
+          <TabsTrigger value="calendar">Calendario</TabsTrigger>
+        </TabsList>
+        <TabsContent value="list" className="mt-4">
+          <AppointmentList
+            appointments={filteredAppointments}
+            onStatusUpdate={handleAppointmentUpdate}
+            loading={loading}
+          />
+        </TabsContent>
+        <TabsContent value="calendar" className="mt-4">
+          <AppointmentCalendar
+            appointments={filteredAppointments}
+            onStatusUpdate={handleAppointmentUpdate}
+            loading={loading}
+          />
+        </TabsContent>
+      </Tabs>
+
+      <NewAppointmentDialog
+        open={showNewAppointmentDialog}
+        onOpenChange={setShowNewAppointmentDialog}
+        onAppointmentCreated={loadAppointments}
+      />
     </div>
   )
 }

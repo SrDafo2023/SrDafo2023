@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { PlusIcon, MoreHorizontalIcon, SearchIcon, DogIcon } from "lucide-react"
+import { PlusIcon, MoreHorizontalIcon, SearchIcon, DogIcon, Scissors, Clock, DollarSign, Star } from "lucide-react"
 import {
   Dialog,
   DialogContent,
@@ -29,64 +29,42 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useState } from "react"
 
-export default function ServicesPage() {
+export default function GroomingServicesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
   const services = [
     {
-      id: 1,
-      name: "Baño y Corte Estándar",
-      description: "Servicio completo de baño, secado y corte de pelo",
-      price: 35.99,
-      duration: 60,
-      category: "grooming",
-      status: "active",
+      name: "Baño y Corte Completo",
+      duration: "2 horas",
+      price: "$45.000",
+      rating: 4.8,
+      description: "Incluye baño, corte de pelo personalizado, corte de uñas, limpieza de oídos y perfume.",
+      status: "Disponible"
     },
     {
-      id: 2,
-      name: "Spa Completo",
-      description: "Tratamiento de spa con productos premium y aromaterapia",
-      price: 49.99,
-      duration: 90,
-      category: "grooming",
-      status: "active",
+      name: "Spa Deluxe",
+      duration: "3 horas",
+      price: "$65.000",
+      rating: 4.9,
+      description: "Tratamiento completo con productos premium, masaje relajante, hidratación profunda y aromaterapia.",
+      status: "Destacado"
     },
     {
-      id: 3,
-      name: "Cuidado Dental",
-      description: "Limpieza dental profesional para mantener la salud bucal",
-      price: 29.99,
-      duration: 30,
-      category: "health",
-      status: "active",
-    },
-    {
-      id: 4,
       name: "Corte de Uñas",
-      description: "Servicio de corte y limado de uñas",
-      price: 15.99,
-      duration: 15,
-      category: "grooming",
-      status: "active",
+      duration: "30 min",
+      price: "$15.000",
+      rating: 4.7,
+      description: "Corte profesional de uñas con lima y pulido.",
+      status: "Disponible"
     },
     {
-      id: 5,
-      name: "Desparasitación",
-      description: "Tratamiento preventivo contra parásitos",
-      price: 25.99,
-      duration: 20,
-      category: "health",
-      status: "active",
-    },
-    {
-      id: 6,
-      name: "Adiestramiento Básico",
-      description: "Sesión de entrenamiento para comandos básicos",
-      price: 39.99,
-      duration: 45,
-      category: "training",
-      status: "inactive",
-    },
+      name: "Limpieza Dental",
+      duration: "45 min",
+      price: "$25.000",
+      rating: 4.6,
+      description: "Limpieza dental completa y revisión bucal.",
+      status: "Disponible"
+    }
   ]
 
   return (
@@ -179,7 +157,7 @@ export default function ServicesPage() {
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {services.map((service) => (
-            <Card key={service.id}>
+            <Card key={service.name}>
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-2">
@@ -191,12 +169,12 @@ export default function ServicesPage() {
                       <Badge
                         variant="outline"
                         className={
-                          service.status === "active"
-                            ? "border-green-500 text-green-700 bg-green-50"
-                            : "border-gray-500 text-gray-700 bg-gray-50"
+                          service.status === "Destacado"
+                            ? "border-yellow-500 text-yellow-700 bg-yellow-50"
+                            : "border-green-500 text-green-700 bg-green-50"
                         }
                       >
-                        {service.status === "active" ? "Activo" : "Inactivo"}
+                        {service.status}
                       </Badge>
                     </div>
                   </div>
@@ -212,7 +190,7 @@ export default function ServicesPage() {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem>Ver detalles</DropdownMenuItem>
                       <DropdownMenuItem>Editar servicio</DropdownMenuItem>
-                      <DropdownMenuItem>{service.status === "active" ? "Desactivar" : "Activar"}</DropdownMenuItem>
+                      <DropdownMenuItem>{service.status === "Destacado" ? "Desactivar" : "Activar"}</DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem className="text-red-600">Eliminar servicio</DropdownMenuItem>
                     </DropdownMenuContent>
@@ -222,8 +200,8 @@ export default function ServicesPage() {
               <CardContent>
                 <CardDescription className="mb-3">{service.description}</CardDescription>
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-2xl font-bold">${service.price}</span>
-                  <span className="text-sm text-muted-foreground">{service.duration} min</span>
+                  <span className="text-2xl font-bold">{service.price}</span>
+                  <span className="text-sm text-muted-foreground">{service.duration}</span>
                 </div>
                 <Button variant="outline" className="w-full">
                   Ver citas programadas
@@ -252,7 +230,7 @@ export default function ServicesPage() {
               </TableHeader>
               <TableBody>
                 {services.map((service) => (
-                  <TableRow key={service.id}>
+                  <TableRow key={service.name}>
                     <TableCell>
                       <div>
                         <p className="font-medium">{service.name}</p>
@@ -260,26 +238,20 @@ export default function ServicesPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline">
-                        {service.category === "grooming"
-                          ? "Grooming"
-                          : service.category === "health"
-                            ? "Salud"
-                            : "Entrenamiento"}
-                      </Badge>
+                      <Badge variant="outline">Grooming</Badge>
                     </TableCell>
-                    <TableCell className="text-right">${service.price}</TableCell>
-                    <TableCell className="text-right">{service.duration} min</TableCell>
+                    <TableCell className="text-right">{service.price}</TableCell>
+                    <TableCell className="text-right">{service.duration}</TableCell>
                     <TableCell>
                       <Badge
                         variant="outline"
                         className={
-                          service.status === "active"
-                            ? "border-green-500 text-green-700 bg-green-50"
-                            : "border-gray-500 text-gray-700 bg-gray-50"
+                          service.status === "Destacado"
+                            ? "border-yellow-500 text-yellow-700 bg-yellow-50"
+                            : "border-green-500 text-green-700 bg-green-50"
                         }
                       >
-                        {service.status === "active" ? "Activo" : "Inactivo"}
+                        {service.status}
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">
@@ -295,7 +267,7 @@ export default function ServicesPage() {
                           <DropdownMenuSeparator />
                           <DropdownMenuItem>Ver detalles</DropdownMenuItem>
                           <DropdownMenuItem>Editar servicio</DropdownMenuItem>
-                          <DropdownMenuItem>{service.status === "active" ? "Desactivar" : "Activar"}</DropdownMenuItem>
+                          <DropdownMenuItem>{service.status === "Destacado" ? "Desactivar" : "Activar"}</DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-red-600">Eliminar servicio</DropdownMenuItem>
                         </DropdownMenuContent>
@@ -307,6 +279,52 @@ export default function ServicesPage() {
             </Table>
           </CardContent>
         </Card>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Servicios</CardTitle>
+              <Scissors className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">12</div>
+              <p className="text-xs text-muted-foreground">4 servicios destacados</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Duración Promedio</CardTitle>
+              <Clock className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">1.5h</div>
+              <p className="text-xs text-muted-foreground">Por servicio</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Precio Promedio</CardTitle>
+              <DollarSign className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">$35.000</div>
+              <p className="text-xs text-muted-foreground">Por servicio</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Calificación</CardTitle>
+              <Star className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">4.8</div>
+              <p className="text-xs text-muted-foreground">Promedio general</p>
+            </CardContent>
+          </Card>
+        </div>
       </main>
     </div>
   )

@@ -1,58 +1,74 @@
-import { getMessaging, getToken, onMessage } from 'firebase/messaging';
-import { collection, query, where, orderBy, onSnapshot, doc, updateDoc } from 'firebase/firestore';
-import { app, db } from '../../Base_de_datos/firebase';
-import type { Notification as NotificationType } from '@shared/types/notification.types';
+import { getMessaging, getToken, onMessage, Messaging } from 'firebase/messaging';
+import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, Firestore } from 'firebase/firestore';
+import { app, db } from '@/config/firebase/firebase';
+import type { Notification } from '@/types/notification.types';
+import type { FirebaseApp } from 'firebase/app';
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
-if (!VAPID_KEY) {
-  console.error('VAPID key no configurada. Por favor, configura NEXT_PUBLIC_FIREBASE_VAPID_KEY en .env.local');
-}
-
-if (!API_URL) {
-  console.error('API URL no configurada. Por favor, configura NEXT_PUBLIC_API_URL en .env.local');
-}
-
 class NotificationService {
-  private messaging = getMessaging(app);
+  private messaging: Messaging | undefined;
+  private db: Firestore;
+  private app: FirebaseApp;
+  private initialized = false;
+
+  constructor() {
+    this.app = app;
+    this.db = db;
+    try {
+      this.messaging = getMessaging(this.app);
+      this.initialized = true;
+    } catch (error) {
+      console.error('Error al inicializar Firebase Messaging:', error);
+      this.initialized = false;
+    }
+  }
 
   // Solicitar permiso y registrar para notificaciones push
   async requestPermissionAndRegister(userToken: string): Promise<string | null> {
+    if (!this.initialized || !this.messaging) {
+      console.warn('Firebase Messaging no está inicializado');
+      return null;
+    }
+
     try {
-      console.log('Solicitando permiso para notificaciones...');
+      if (!VAPID_KEY) {
+        throw new Error('VAPID key no configurada');
+      }
+
+      if (typeof window === 'undefined' || !('Notification' in window)) {
+        console.warn('Las notificaciones no están soportadas en este navegador');
+        return null;
+      }
+
       const permission = await window.Notification.requestPermission();
       
       if (permission === 'granted') {
-        console.log('Permiso concedido, obteniendo token FCM...');
         const token = await getToken(this.messaging, { vapidKey: VAPID_KEY });
         
         if (token) {
-          console.log('Token FCM obtenido:', token);
           await this.registerTokenWithBackend(token, userToken);
           return token;
-        } else {
-          console.warn('No se pudo obtener el token FCM');
-          return null;
         }
-      } else {
-        console.warn('Permiso de notificaciones denegado');
-        return null;
       }
+      
+      return null;
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       console.error('Error al solicitar permiso y registrar token:', error);
-      throw new Error(`Error al configurar notificaciones: ${errorMessage}`);
+      return null;
     }
   }
 
   // Registrar el token con el backend
   private async registerTokenWithBackend(fcmToken: string, userToken: string): Promise<void> {
-    try {
-      if (!API_URL) {
-        throw new Error('API_URL no configurada');
-      }
+    if (!API_URL) {
+      console.warn('API_URL no configurada');
+      return;
+    }
 
+    try {
       const response = await fetch(`${API_URL}/api/notifications/register-token`, {
         method: 'POST',
         headers: {
@@ -65,12 +81,8 @@ class NotificationService {
       if (!response.ok) {
         throw new Error(`Error al registrar token: ${response.statusText}`);
       }
-
-      console.log('Token registrado exitosamente en el backend');
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    } catch (error) {
       console.error('Error al registrar token con el backend:', error);
-      throw new Error(`Error al registrar token: ${errorMessage}`);
     }
   }
 
@@ -78,51 +90,66 @@ class NotificationService {
   subscribeToUserNotifications(
     userId: string,
     userType: string,
-    callback: (notifications: NotificationType[]) => void
+    callback: (notifications: Notification[]) => void
   ): () => void {
-    const notificationsQuery = query(
-      collection(db, 'notifications'),
-      where('recipientIds', 'array-contains', userId),
-      orderBy('createdAt', 'desc')
-    );
+    try {
+      const notificationsQuery = query(
+        collection(this.db, 'notifications'),
+        where('recipientIds', 'array-contains', userId),
+        orderBy('timestamp', 'desc')
+      );
 
-    return onSnapshot(notificationsQuery, (snapshot) => {
-      const notifications = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as NotificationType[];
-      callback(notifications);
-    });
+      return onSnapshot(notificationsQuery, (snapshot) => {
+        const notifications = snapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Notification[];
+        callback(notifications);
+      }, (error) => {
+        console.error('Error en la suscripción a notificaciones:', error);
+        callback([]);
+      });
+    } catch (error) {
+      console.error('Error al crear suscripción a notificaciones:', error);
+      return () => {};
+    }
   }
 
   // Escuchar notificaciones en primer plano
-  listenToNotifications(callback: (notification: NotificationType) => void): () => void {
-    return onMessage(this.messaging, (payload) => {
-      console.log('Mensaje recibido:', payload);
-      
-      const notification: NotificationType = {
-        title: payload.notification?.title || '',
-        message: payload.notification?.body || '',
-        type: (payload.data?.type as NotificationType['type']) || 'info',
-        recipientType: (payload.data?.recipientType as NotificationType['recipientType']) || 'user',
-        link: payload.data?.link,
-        metadata: payload.data?.metadata ? JSON.parse(payload.data.metadata) : undefined
-      };
+  listenToNotifications(callback: (notification: Notification) => void): () => void {
+    if (!this.initialized || !this.messaging) {
+      console.warn('Firebase Messaging no está inicializado');
+      return () => {};
+    }
 
-      callback(notification);
+    return onMessage(this.messaging, (payload) => {
+      try {
+        const notification: Notification = {
+          title: payload.notification?.title || '',
+          message: payload.notification?.body || '',
+          type: (payload.data?.type as Notification['type']) || 'info',
+          recipientType: (payload.data?.recipientType as Notification['recipientType']) || 'user',
+          link: payload.data?.link,
+          metadata: payload.data?.metadata ? JSON.parse(payload.data.metadata) : undefined,
+          timestamp: new Date().toISOString()
+        };
+
+        callback(notification);
+      } catch (error) {
+        console.error('Error al procesar notificación:', error);
+      }
     });
   }
 
   // Marcar notificación como leída
   async markAsRead(notificationId: string, userToken: string): Promise<void> {
     try {
-      const notificationRef = doc(db, 'notifications', notificationId);
+      const notificationRef = doc(this.db, 'notifications', notificationId);
       await updateDoc(notificationRef, {
         read: true,
-        readAt: new Date()
+        readAt: new Date().toISOString()
       });
 
-      // También notificar al backend
       if (API_URL) {
         await fetch(`${API_URL}/api/notifications/${notificationId}/mark-read`, {
           method: 'POST',
@@ -131,14 +158,11 @@ class NotificationService {
           }
         });
       }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+    } catch (error) {
       console.error('Error al marcar notificación como leída:', error);
-      throw new Error(`Error al marcar notificación como leída: ${errorMessage}`);
     }
   }
 }
 
-// Exportar una instancia singleton del servicio
 export const notificationService = new NotificationService();
-export type { NotificationType as Notification }; 
+export type { Notification }; 
