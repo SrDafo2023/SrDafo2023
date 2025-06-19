@@ -6,9 +6,92 @@ import { Badge } from "@/components/ui/badge"
 import { ShoppingCartIcon, MinusIcon, PlusIcon, TrashIcon } from "lucide-react"
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { Separator } from "@/components/ui/separator"
+import { useUser } from "@/hooks/useUser"
+import { useState } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { useToast } from "@/hooks/use-toast"
 
 export function CartSidebar() {
   const { items, removeFromCart, updateQuantity, clearCart, getTotalItems, getTotalPrice } = useCart()
+  const { user, loading } = useUser()
+  const { toast } = useToast()
+  const [isCheckoutOpen, setIsCheckoutOpen] = useState(false)
+  const [paymentMethod, setPaymentMethod] = useState('')
+  const [isPaying, setIsPaying] = useState(false)
+  const [cardData, setCardData] = useState({
+    name: '',
+    number: '',
+    expiry: '',
+    cvv: '',
+  });
+  const [cardErrors, setCardErrors] = useState({
+    name: false,
+    number: false,
+    expiry: false,
+    cvv: false,
+  });
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [finalPaying, setFinalPaying] = useState(false);
+
+  if (loading || !user || user.userType !== 'user') {
+    return null
+  }
+
+  const validateCard = () => {
+    const errors = {
+      name: cardData.name.trim() === '',
+      number: !/^\d{16}$/.test(cardData.number),
+      expiry: !/^(0[1-9]|1[0-2])\/\d{2}$/.test(cardData.expiry),
+      cvv: !/^\d{3,4}$/.test(cardData.cvv),
+    };
+    setCardErrors(errors);
+    return !Object.values(errors).some(Boolean);
+  };
+
+  const handleCheckout = async () => {
+    if (paymentMethod === 'tarjeta' && !validateCard()) return;
+    setIsPaying(true);
+    setTimeout(() => {
+      setIsPaying(false);
+      setIsCheckoutOpen(false);
+      clearCart();
+      toast({
+        title: '¡Compra realizada con éxito!',
+        description: 'Tu pedido ha sido procesado correctamente.'
+      });
+      setPaymentMethod('');
+      setCardData({ name: '', number: '', expiry: '', cvv: '' });
+    }, 1500);
+  };
+
+  const openPaymentModal = () => {
+    setIsCheckoutOpen(false);
+    setTimeout(() => setShowPaymentModal(true), 200);
+  };
+
+  const closePaymentModal = () => {
+    setShowPaymentModal(false);
+    setFinalPaying(false);
+    setCardData({ name: '', number: '', expiry: '', cvv: '' });
+    setCardErrors({ name: false, number: false, expiry: false, cvv: false });
+  };
+
+  const handleFinalPayment = () => {
+    if (paymentMethod === 'tarjeta' && !validateCard()) return;
+    setFinalPaying(true);
+    setTimeout(() => {
+      setFinalPaying(false);
+      setShowPaymentModal(false);
+      setIsCheckoutOpen(false);
+      clearCart();
+      toast({
+        title: '¡Compra realizada con éxito!',
+        description: 'Tu pedido ha sido procesado correctamente.'
+      });
+      setPaymentMethod('');
+      setCardData({ name: '', number: '', expiry: '', cvv: '' });
+    }, 1500);
+  };
 
   return (
     <Sheet>
@@ -88,7 +171,9 @@ export function CartSidebar() {
                 </div>
 
                 <div className="space-y-2">
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700">Proceder al Pago</Button>
+                  <Button className="w-full bg-blue-600 hover:bg-blue-700" onClick={() => setIsCheckoutOpen(true)}>
+                    Proceder al Pago
+                  </Button>
                   <Button variant="outline" className="w-full" onClick={clearCart}>
                     Vaciar Carrito
                   </Button>
@@ -97,6 +182,173 @@ export function CartSidebar() {
             </>
           )}
         </div>
+
+        {/* Modal de pago */}
+        <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Selecciona el método de pago</DialogTitle>
+              <DialogDescription>Elige cómo deseas pagar tu compra.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="tarjeta"
+                    checked={paymentMethod === 'tarjeta'}
+                    onChange={() => setPaymentMethod('tarjeta')}
+                  />
+                  Tarjeta Débito/Crédito
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="mercadopago"
+                    checked={paymentMethod === 'mercadopago'}
+                    onChange={() => setPaymentMethod('mercadopago')}
+                  />
+                  MercadoPago
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="webpay"
+                    checked={paymentMethod === 'webpay'}
+                    onChange={() => setPaymentMethod('webpay')}
+                  />
+                  WebPay
+                </label>
+              </div>
+              {paymentMethod === 'tarjeta' && (
+                <div className="space-y-2 mt-4">
+                  <input
+                    type="text"
+                    placeholder="Nombre en la tarjeta"
+                    className={`w-full border rounded px-3 py-2 ${cardErrors.name ? 'border-red-500' : 'border-gray-300'}`}
+                    value={cardData.name}
+                    onChange={e => setCardData({ ...cardData, name: e.target.value })}
+                  />
+                  <input
+                    type="text"
+                    placeholder="Número de tarjeta (16 dígitos)"
+                    maxLength={16}
+                    className={`w-full border rounded px-3 py-2 ${cardErrors.number ? 'border-red-500' : 'border-gray-300'}`}
+                    value={cardData.number}
+                    onChange={e => setCardData({ ...cardData, number: e.target.value.replace(/[^0-9]/g, '') })}
+                  />
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      placeholder="MM/AA"
+                      maxLength={5}
+                      className={`w-1/2 border rounded px-3 py-2 ${cardErrors.expiry ? 'border-red-500' : 'border-gray-300'}`}
+                      value={cardData.expiry}
+                      onChange={e => setCardData({ ...cardData, expiry: e.target.value.replace(/[^0-9\/]/g, '') })}
+                    />
+                    <input
+                      type="text"
+                      placeholder="CVV"
+                      maxLength={4}
+                      className={`w-1/2 border rounded px-3 py-2 ${cardErrors.cvv ? 'border-red-500' : 'border-gray-300'}`}
+                      value={cardData.cvv}
+                      onChange={e => setCardData({ ...cardData, cvv: e.target.value.replace(/[^0-9]/g, '') })}
+                    />
+                  </div>
+                  {Object.values(cardErrors).some(Boolean) && (
+                    <div className="text-red-500 text-xs">Por favor, completa los datos bancarios correctamente.</div>
+                  )}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button
+                className="w-full bg-green-600 hover:bg-green-700"
+                disabled={!paymentMethod}
+                onClick={() => setShowPaymentModal(true)}
+              >
+                Confirmar y Pagar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Mueve este modal aquí, fuera del Dialog anterior */}
+        <Dialog open={showPaymentModal} onOpenChange={closePaymentModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Ingresa los datos de pago</DialogTitle>
+              <DialogDescription>Completa los datos para procesar tu compra.</DialogDescription>
+            </DialogHeader>
+            {paymentMethod === 'tarjeta' && (
+              <div className="space-y-2 mt-2">
+                <input
+                  type="text"
+                  placeholder="Nombre en la tarjeta"
+                  className={`w-full border rounded px-3 py-2 ${cardErrors.name ? 'border-red-500' : 'border-gray-300'}`}
+                  value={cardData.name}
+                  onChange={e => setCardData({ ...cardData, name: e.target.value })}
+                />
+                <input
+                  type="text"
+                  placeholder="Número de tarjeta (16 dígitos)"
+                  maxLength={16}
+                  className={`w-full border rounded px-3 py-2 ${cardErrors.number ? 'border-red-500' : 'border-gray-300'}`}
+                  value={cardData.number}
+                  onChange={e => setCardData({ ...cardData, number: e.target.value.replace(/[^0-9]/g, '') })}
+                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="MM/AA"
+                    maxLength={5}
+                    className={`w-1/2 border rounded px-3 py-2 ${cardErrors.expiry ? 'border-red-500' : 'border-gray-300'}`}
+                    value={cardData.expiry}
+                    onChange={e => setCardData({ ...cardData, expiry: e.target.value.replace(/[^0-9\/]/g, '') })}
+                  />
+                  <input
+                    type="text"
+                    placeholder="CVV"
+                    maxLength={4}
+                    className={`w-1/2 border rounded px-3 py-2 ${cardErrors.cvv ? 'border-red-500' : 'border-gray-300'}`}
+                    value={cardData.cvv}
+                    onChange={e => setCardData({ ...cardData, cvv: e.target.value.replace(/[^0-9]/g, '') })}
+                  />
+                </div>
+                {Object.values(cardErrors).some(Boolean) && (
+                  <div className="text-red-500 text-xs">Por favor, completa los datos bancarios correctamente.</div>
+                )}
+              </div>
+            )}
+            {(paymentMethod === 'mercadopago' || paymentMethod === 'webpay') && (
+              <div className="space-y-2 mt-2">
+                <input
+                  type="text"
+                  placeholder="Correo electrónico"
+                  className="w-full border rounded px-3 py-2 border-gray-300"
+                />
+                <input
+                  type="text"
+                  placeholder="Nombre completo"
+                  className="w-full border rounded px-3 py-2 border-gray-300"
+                />
+                {/* Puedes agregar más campos según el método */}
+              </div>
+            )}
+            <DialogFooter>
+              <Button
+                className="w-full bg-green-600 hover:bg-green-700"
+                disabled={finalPaying || (paymentMethod === 'tarjeta' && !validateCard())}
+                onClick={handleFinalPayment}
+              >
+                {finalPaying ? 'Procesando...' : 'Pagar'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </SheetContent>
     </Sheet>
   )

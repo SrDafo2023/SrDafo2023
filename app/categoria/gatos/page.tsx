@@ -7,11 +7,13 @@ import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { ArrowLeft, Star, Heart, ShoppingCart } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
+import { useCart } from "@/contexts/cart-context"
 
 export default function GatosPage() {
   const { toast } = useToast()
   const [activeCategory, setActiveCategory] = useState("Todos")
   const [favorites, setFavorites] = useState<number[]>([])
+  const { addToCart } = useCart()
 
   const products = [
     {
@@ -79,6 +81,12 @@ export default function GatosPage() {
   const categories = ["Todos", "Alimento", "Higiene", "Juguetes", "Accesorios", "Transporte", "Snacks"]
 
   const handleAddToCart = (product: any) => {
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: parseInt(product.price.replace(/[^0-9]/g, "")),
+      image: product.image,
+    })
     toast({
       title: "Producto agregado",
       description: `${product.name} ha sido agregado al carrito`,

@@ -23,10 +23,14 @@ import {
 import { useUser } from "@/hooks/useUser";
 import { Loader2Icon } from "lucide-react";
 import { useTheme } from "next-themes";
+import { useCart } from "@/contexts/cart-context";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Home() {
   const { user, loading } = useUser();
   const { theme, setTheme } = useTheme();
+  const { addToCart, getTotalItems } = useCart();
+  const { toast } = useToast();
 
   const baseCategories = [
     { name: "Perros", href: "/categoria/perros", icon: "🐕" },
@@ -45,6 +49,7 @@ export default function Home() {
 
   const featuredProducts = [
     {
+      id: 1,
       name: "Alimento Premium Perro",
       price: "$25.990",
       originalPrice: "$35.990",
@@ -52,6 +57,7 @@ export default function Home() {
       image: "https://images.unsplash.com/photo-1589924691995-400dc9ecc119?w=400&h=300&fit=crop",
     },
     {
+      id: 2,
       name: "Arena Sanitaria Gato",
       price: "$8.990",
       originalPrice: "$12.990",
@@ -59,6 +65,7 @@ export default function Home() {
       image: "https://images.unsplash.com/photo-1574144611937-0df059b5ef3e?w=400&h=300&fit=crop",
     },
     {
+      id: 3,
       name: "Juguete Interactivo",
       price: "$15.990",
       originalPrice: "$19.990",
@@ -66,6 +73,7 @@ export default function Home() {
       image: "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?w=400&h=300&fit=crop",
     },
     {
+      id: 4,
       name: "Correa Retráctil",
       price: "$12.990",
       originalPrice: "$16.990",
@@ -83,6 +91,19 @@ export default function Home() {
       default:
         return '/user/settings';
     }
+  };
+
+  const handleAddToCart = (product: any) => {
+    addToCart({
+      id: product.id || product.name,
+      name: product.name,
+      price: parseInt(product.price.replace(/[^0-9]/g, "")),
+      image: product.image,
+    });
+    toast({
+      title: "Producto agregado",
+      description: `${product.name} ha sido agregado al carrito`,
+    });
   };
 
   return (
@@ -115,7 +136,7 @@ export default function Home() {
                   >
                     <Link href={getDashboardPath(user)}>Mi Perfil</Link>
                   </Button>
-                  {user && user.userType === 'admin' && (
+                  {user.userType === 'admin' && (
                     <Button
                       variant="outline"
                       size="sm"
@@ -171,7 +192,9 @@ export default function Home() {
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20 relative" asChild>
                 <Link href="/carrito">
                   <ShoppingCart className="h-5 w-5" />
-                  <Badge className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs">0</Badge>
+                  {getTotalItems() > 0 && (
+                    <Badge className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs">{getTotalItems()}</Badge>
+                  )}
                 </Link>
               </Button>
               {loading ? (
@@ -313,8 +336,8 @@ export default function Home() {
                       ))}
                     </div>
                   </Link>
-                  <Button asChild className="w-full bg-purple-600 hover:bg-purple-700">
-                    <Link href={`/carrito/agregar/${index}`}>Agregar al carrito</Link>
+                  <Button className="w-full bg-purple-600 hover:bg-purple-700" onClick={() => handleAddToCart(product)}>
+                    Agregar al carrito
                   </Button>
                 </CardContent>
               </Card>

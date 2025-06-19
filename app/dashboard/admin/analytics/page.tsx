@@ -1,3 +1,4 @@
+'use client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -13,7 +14,7 @@ import { DateRange } from "react-day-picker"
 import { useState } from "react"
 import { cn } from "@/lib/utils"
 import jsPDF from "jspdf"
-import "jspdf-autotable"
+import autoTable from "jspdf-autotable"
 import * as XLSX from "xlsx"
 import { saveAs } from "file-saver"
 
@@ -27,11 +28,35 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
+import { ChartContainer } from "@/components/ui/chart";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+
+// Justo después de los imports
+if (typeof window !== "undefined" && autoTable) {
+  (jsPDF as any).autoTable = autoTable;
+}
+
 export default function AdminAnalyticsPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
     from: addDays(new Date(), -30),
     to: new Date(),
   })
+
+  const [monthlyRevenue, setMonthlyRevenue] = useState([
+    { month: "Enero", revenue: 12000 },
+    { month: "Febrero", revenue: 15000 },
+    { month: "Marzo", revenue: 18000 },
+    { month: "Abril", revenue: 14000 },
+    { month: "Mayo", revenue: 20000 },
+    { month: "Junio", revenue: 17000 },
+  ]);
+
+  const [salesData, setSalesData] = useState([
+    { period: "Semana 1", sales: 320 },
+    { period: "Semana 2", sales: 450 },
+    { period: "Semana 3", sales: 390 },
+    { period: "Semana 4", sales: 520 },
+  ]);
 
   const handleDownloadPdf = () => {
     console.log("Descargar PDF para el período:", dateRange)
@@ -46,8 +71,25 @@ export default function AdminAnalyticsPage() {
   }
 
   const handleDownloadServicePdf = () => {
-    console.log("Descargar PDF de Servicios para el período:", dateRange)
-    alert("Descargando reporte PDF de Servicios...")
+    const serviceData = [
+      { service: "Grooming - Baño y Corte", bookings: 156, revenue: "$5,616" },
+      { service: "Grooming - Spa Completo", bookings: 89, revenue: "$4,451" },
+      { service: "Grooming - Cuidado Dental", bookings: 67, revenue: "$2,009" },
+      { service: "Grooming - Corte de Uñas", bookings: 45, revenue: "$720" },
+      { service: "Grooming - Desparasitación", bookings: 34, revenue: "$884" },
+      { service: "Petshop - Alimento Premium", bookings: 210, revenue: "$8,900" },
+      { service: "Petshop - Juguetes", bookings: 120, revenue: "$2,500" },
+      { service: "Petshop - Accesorios", bookings: 98, revenue: "$1,900" },
+      { service: "Petshop - Camas", bookings: 60, revenue: "$2,100" },
+    ];
+    const doc = new jsPDF();
+    doc.text("Reporte de Servicios de Grooming y Petshop", 14, 16);
+    (doc as any).autoTable({
+      startY: 24,
+      head: [["Servicio", "Reservas", "Ingresos"]],
+      body: serviceData.map(s => [s.service, s.bookings, s.revenue]),
+    });
+    doc.save(`reporte_servicios_grooming_petshop_${format(dateRange?.from || new Date(), "yyyyMMdd")}_${format(dateRange?.to || new Date(), "yyyyMMdd")}.pdf`);
   }
 
   const handleDownloadServiceExcel = () => {
@@ -137,45 +179,40 @@ export default function AdminAnalyticsPage() {
           </div>
         </div>
 
-        {/* Botón de Reporte de Servicios - Ahora más visible */}
-        <div className="flex justify-end mb-4">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button 
-                variant="default" 
-                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2"
-                size="lg"
-              >
-                <DownloadIcon className="mr-2 h-5 w-5" />
-                Exportar Reporte de Servicios
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel className="font-semibold">Opciones de Descarga de Servicios</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem 
-                onClick={handleDownloadServicePdf}
-                className="cursor-pointer hover:bg-blue-50"
-              >
-                <FileTextIcon className="mr-2 h-4 w-4 text-blue-600" />
-                Descargar PDF de Servicios
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={handleDownloadServiceExcel}
-                className="cursor-pointer hover:bg-blue-50"
-              >
-                <TableIcon className="mr-2 h-4 w-4 text-blue-600" />
-                Descargar Excel de Servicios
-              </DropdownMenuItem>
-              <DropdownMenuItem 
-                onClick={() => alert("Función para el tercer tipo de reporte de servicios")}
-                className="cursor-pointer hover:bg-blue-50"
-              >
-                <BarChart3Icon className="mr-2 h-4 w-4 text-blue-600" />
-                Otro Reporte de Servicios
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+        {/* Botón de Reporte de Servicios - Ahora centrado y destacado */}
+        <div className="flex justify-center mb-8">
+          <div className="bg-blue-500 rounded-lg p-6 flex flex-col items-center w-full max-w-xl">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button 
+                  variant="default" 
+                  className="bg-blue-700 hover:bg-blue-800 text-white text-lg font-bold px-8 py-4 rounded-lg shadow-lg"
+                  size="lg"
+                >
+                  <DownloadIcon className="mr-3 h-6 w-6" />
+                  Exportar Reporte de Servicios
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="center" className="w-64">
+                <DropdownMenuLabel className="font-semibold text-blue-700">Opciones de Descarga de Servicios</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={handleDownloadServicePdf}
+                  className="cursor-pointer hover:bg-blue-50 text-blue-700"
+                >
+                  <FileTextIcon className="mr-2 h-4 w-4 text-blue-700" />
+                  Descargar PDF de Servicios
+                </DropdownMenuItem>
+                <DropdownMenuItem 
+                  onClick={handleDownloadServiceExcel}
+                  className="cursor-pointer hover:bg-blue-50 text-blue-700"
+                >
+                  <TableIcon className="mr-2 h-4 w-4 text-blue-700" />
+                  Descargar Excel de Servicios
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
 
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
@@ -243,12 +280,15 @@ export default function AdminAnalyticsPage() {
                   <CardTitle>Ingresos por Mes</CardTitle>
                 </CardHeader>
                 <CardContent className="pl-2">
-                  <div className="h-[300px] w-full bg-muted/20 rounded-md flex items-center justify-center">
-                    <div className="text-center">
-                      <BarChart3Icon className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                      <p className="text-muted-foreground">Gráfico de ingresos mensuales</p>
-                    </div>
-                  </div>
+                  <ChartContainer config={{ revenue: { label: "Ingresos", color: "#6366f1" } }}>
+                    <BarChart data={monthlyRevenue} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="revenue" fill="#6366f1" name="Ingresos" />
+                    </BarChart>
+                  </ChartContainer>
                 </CardContent>
               </Card>
               <Card className="col-span-3">
@@ -372,12 +412,15 @@ export default function AdminAnalyticsPage() {
                 <CardDescription>Rendimiento detallado de ventas</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="h-[400px] w-full bg-muted/20 rounded-md flex items-center justify-center">
-                  <div className="text-center">
-                    <BarChart3Icon className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                    <p className="text-muted-foreground">Gráfico detallado de ventas por período</p>
-                  </div>
-                </div>
+                <ChartContainer config={{ sales: { label: "Ventas", color: "#10b981" } }}>
+                  <BarChart data={salesData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="period" />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="sales" fill="#10b981" name="Ventas" />
+                  </BarChart>
+                </ChartContainer>
               </CardContent>
             </Card>
           </TabsContent>

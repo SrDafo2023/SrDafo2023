@@ -105,6 +105,26 @@ export default function CentrosAdopcionPage() {
           }}
         />
       )}
+      {/* Botón Volver al principio */}
+      <button
+        onClick={() => window.location.href = '/'}
+        style={{
+          position: 'fixed',
+          top: '20px',
+          left: '20px',
+          zIndex: 1000,
+          background: '#f97316',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          padding: '8px 16px',
+          fontWeight: 'bold',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+          cursor: 'pointer',
+        }}
+      >
+        Volver al inicio
+      </button>
     </div>
   );
 } 

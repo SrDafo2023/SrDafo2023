@@ -3,6 +3,8 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import Link from "next/link"
 import { ArrowLeft, Star, Heart, ShoppingCart } from "lucide-react"
+import { useCart } from "@/contexts/cart-context"
+import { useToast } from "@/hooks/use-toast"
 
 export default function OfertasPage() {
   const products = [
@@ -73,6 +75,22 @@ export default function OfertasPage() {
       pet: "Pequeñas mascotas",
     },
   ]
+
+  const { addToCart } = useCart()
+  const { toast } = useToast()
+
+  const handleAddToCart = (product: any) => {
+    addToCart({
+      id: product.id,
+      name: product.name,
+      price: parseInt(product.price.replace(/[^0-9]/g, "")),
+      image: product.image,
+    })
+    toast({
+      title: "Producto agregado",
+      description: `${product.name} ha sido agregado al carrito`,
+    })
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -148,7 +166,7 @@ export default function OfertasPage() {
                   ))}
                   <span className="text-sm text-gray-500 ml-1">({product.rating})</span>
                 </div>
-                <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                <Button className="w-full bg-purple-600 hover:bg-purple-700" onClick={() => handleAddToCart(product)}>
                   <ShoppingCart className="h-4 w-4 mr-2" />
                   Agregar al carrito
                 </Button>

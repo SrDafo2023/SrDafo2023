@@ -104,10 +104,13 @@ export function DashboardHeader() {
               <Link href="/dashboard/business/settings/profile">Perfil</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem asChild>
-              <Link href="/auth" className="text-red-600">
-                Cerrar sesión
-              </Link>
+            <DropdownMenuItem onClick={async () => {
+              const { signOut } = await import('firebase/auth');
+              const { auth } = await import('@/lib/firebase');
+              await signOut(auth);
+              window.location.href = '/';
+            }} className="text-red-600 cursor-pointer">
+              Cerrar sesión
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
