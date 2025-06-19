@@ -11,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { EyeIcon, EyeOffIcon, ArrowLeftIcon, CheckIcon } from "lucide-react"
 import { createUserWithEmailAndPassword, AuthError } from "firebase/auth"
 import { doc, setDoc } from "firebase/firestore"
-import { auth, db } from "@/Base_de_datos/firebase"
+import { auth, db } from "@/config/firebase/firebase"
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)

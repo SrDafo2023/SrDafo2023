@@ -1,4 +1,4 @@
-import { db } from '@/Base_de_datos/firebase'; // Import the Firestore instance
+import { db } from '@/config/firebase/firebase'; // Import the Firestore instance
 import { collection, getDocs, addDoc, doc, setDoc, getDoc, query, where, deleteDoc } from 'firebase/firestore'; // Import Firestore functions
 import { Pet } from './pet-storage';
 

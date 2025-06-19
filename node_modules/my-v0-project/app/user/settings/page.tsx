@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { db, auth } from '@/Base_de_datos/firebase';
+import { db, auth } from '@/config/firebase/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { useTheme } from 'next-themes'; // Assuming next-themes is used for theme management
 import { Loader2Icon, ArrowLeftIcon } from 'lucide-react';

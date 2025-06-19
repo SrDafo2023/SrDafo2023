@@ -16,11 +16,11 @@ import { signInWithEmailAndPassword, AuthError, Auth } from "firebase/auth"
 // Import Firestore functions and db instance
 import { doc, getDoc, setDoc } from "firebase/firestore"
 // Import db directly, get auth from context
-import { db } from "@/Base_de_datos/firebase"
+import { db } from "@/config/firebase/firebase"
 // Remove the import for the old storage functions
 // import { initializeDefaultUsers, validateCredentials } from "@/lib/user-storage"
 import { Loader2Icon } from "lucide-react"
-import { useFirebaseAuth } from "@/Base_de_datos/firebase-auth-provider" // Import the context hook
+import { useFirebaseAuth } from "@/config/firebase/firebase-auth-provider" // Updated import path
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")

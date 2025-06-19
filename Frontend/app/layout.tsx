@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { FirebaseAuthProvider } from "@/Base_de_datos/firebase-auth-provider"
+import { FirebaseAuthProvider } from "@/config/firebase/firebase-auth-provider"
 import { CartProvider } from "@/contexts/cart-context"
 
 const inter = Inter({ subsets: ["latin"] })

@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { User as FirebaseUser, onAuthStateChanged, Auth } from 'firebase/auth'; // Import Auth and onAuthStateChanged
 import { doc, getDoc } from 'firebase/firestore';
-import { db } from '@/Base_de_datos/firebase'; // Import db directly
-import { useFirebaseAuth } from "@/Base_de_datos/firebase-auth-provider"; // Import the context hook
+import { db } from '@/config/firebase/firebase'; // Updated import path
+import { useFirebaseAuth } from "@/config/firebase/firebase-auth-provider"; // Updated import path
 
 // Define a type for the user including custom fields from Firestore
 interface AppUser {

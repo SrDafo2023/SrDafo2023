@@ -10,14 +10,20 @@ import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { CartProvider } from "@/contexts/cart-context";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 export default function CarritoPage() {
-  const { items, removeFromCart, updateQuantity, clearCart, getTotalItems, getTotalPrice } = useCart();
+  const { items, removeFromCart, updateQuantity, clearCart, getTotalItems, getTotalPrice, createOrderFromCart } = useCart();
   const { user, loading } = useUser();
   const { toast } = useToast();
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('');
+  const [shippingMethod, setShippingMethod] = useState('');
   const [isPaying, setIsPaying] = useState(false);
+  const [customerAddress, setCustomerAddress] = useState('');
+  const [customerPhone, setCustomerPhone] = useState('');
+  const [notes, setNotes] = useState('');
 
   if (loading) {
     return <div className="flex justify-center items-center h-40">Cargando...</div>;
@@ -27,17 +33,50 @@ export default function CarritoPage() {
   }
 
   const handleCheckout = async () => {
+    if (!paymentMethod || !shippingMethod || !customerAddress || !customerPhone) {
+      toast({
+        title: 'Error',
+        description: 'Por favor completa todos los campos requeridos.',
+        variant: 'destructive'
+      });
+      return;
+    }
+
     setIsPaying(true);
-    setTimeout(() => {
-      setIsPaying(false);
+    try {
+      const orderId = await createOrderFromCart({
+        customerId: user.id,
+        customerName: `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.userName,
+        customerEmail: user.email || '',
+        customerPhone: customerPhone,
+        customerAddress: customerAddress,
+        paymentMethod: paymentMethod,
+        shippingMethod: shippingMethod,
+        notes: notes,
+      });
+
       setIsCheckoutOpen(false);
-      clearCart();
       toast({
         title: '¡Compra realizada con éxito!',
-        description: 'Tu pedido ha sido procesado correctamente.'
+        description: `Tu pedido #${orderId} ha sido procesado correctamente.`
       });
+      
+      // Reset form
       setPaymentMethod('');
-    }, 1500);
+      setShippingMethod('');
+      setCustomerAddress('');
+      setCustomerPhone('');
+      setNotes('');
+    } catch (error) {
+      console.error('Error creating order:', error);
+      toast({
+        title: 'Error al procesar el pedido',
+        description: 'Hubo un problema al procesar tu compra. Por favor intenta nuevamente.',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsPaying(false);
+    }
   };
 
   return (
@@ -113,51 +152,128 @@ export default function CarritoPage() {
           </>
         )}
 
-        {/* Modal de pago */}
+        {/* Modal de checkout */}
         <Dialog open={isCheckoutOpen} onOpenChange={setIsCheckoutOpen}>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <DialogHeader>
-              <DialogTitle>Selecciona el método de pago</DialogTitle>
-              <DialogDescription>Elige cómo deseas pagar tu compra.</DialogDescription>
+              <DialogTitle>Información de Envío y Pago</DialogTitle>
+              <DialogDescription>Completa los datos para procesar tu compra.</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <div>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="tarjeta"
-                    checked={paymentMethod === 'tarjeta'}
-                    onChange={() => setPaymentMethod('tarjeta')}
-                  />
-                  Tarjeta Débito/Crédito
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="mercadopago"
-                    checked={paymentMethod === 'mercadopago'}
-                    onChange={() => setPaymentMethod('mercadopago')}
-                  />
-                  MercadoPago
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="radio"
-                    name="paymentMethod"
-                    value="webpay"
-                    checked={paymentMethod === 'webpay'}
-                    onChange={() => setPaymentMethod('webpay')}
-                  />
-                  WebPay
-                </label>
+              {/* Información de contacto */}
+              <div className="space-y-2">
+                <Label htmlFor="phone">Teléfono *</Label>
+                <Input
+                  id="phone"
+                  type="tel"
+                  placeholder="+51 987 654 321"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="address">Dirección de envío *</Label>
+                <Input
+                  id="address"
+                  type="text"
+                  placeholder="Av. Principal 123, Lima"
+                  value={customerAddress}
+                  onChange={(e) => setCustomerAddress(e.target.value)}
+                />
+              </div>
+
+              {/* Método de envío */}
+              <div className="space-y-2">
+                <Label>Método de envío *</Label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="shippingMethod"
+                      value="estandar"
+                      checked={shippingMethod === 'estandar'}
+                      onChange={() => setShippingMethod('estandar')}
+                    />
+                    Envío estándar (3-5 días)
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="shippingMethod"
+                      value="express"
+                      checked={shippingMethod === 'express'}
+                      onChange={() => setShippingMethod('express')}
+                    />
+                    Envío express (1-2 días)
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="shippingMethod"
+                      value="tienda"
+                      checked={shippingMethod === 'tienda'}
+                      onChange={() => setShippingMethod('tienda')}
+                    />
+                    Recojo en tienda
+                  </label>
+                </div>
+              </div>
+
+              {/* Método de pago */}
+              <div className="space-y-2">
+                <Label>Método de pago *</Label>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="tarjeta"
+                      checked={paymentMethod === 'tarjeta'}
+                      onChange={() => setPaymentMethod('tarjeta')}
+                    />
+                    Tarjeta Débito/Crédito
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="mercadopago"
+                      checked={paymentMethod === 'mercadopago'}
+                      onChange={() => setPaymentMethod('mercadopago')}
+                    />
+                    MercadoPago
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="webpay"
+                      checked={paymentMethod === 'webpay'}
+                      onChange={() => setPaymentMethod('webpay')}
+                    />
+                    WebPay
+                  </label>
+                </div>
+              </div>
+
+              {/* Notas adicionales */}
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notas adicionales (opcional)</Label>
+                <Input
+                  id="notes"
+                  type="text"
+                  placeholder="Instrucciones especiales para la entrega"
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                />
               </div>
             </div>
+            
             <DialogFooter>
               <Button
                 className="w-full bg-green-600 hover:bg-green-700"
-                disabled={!paymentMethod || isPaying}
+                disabled={!paymentMethod || !shippingMethod || !customerAddress || !customerPhone || isPaying}
                 onClick={handleCheckout}
               >
                 {isPaying ? 'Procesando...' : 'Confirmar y Pagar'}

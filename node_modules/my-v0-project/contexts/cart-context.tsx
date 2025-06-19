@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, type ReactNode } from "react"
+import { createOrder, type Order } from "@/lib/order-storage"
 
 interface CartItem {
   id: number
@@ -18,6 +19,16 @@ interface CartContextType {
   clearCart: () => void
   getTotalItems: () => number
   getTotalPrice: () => number
+  createOrderFromCart: (orderData: {
+    customerId: string
+    customerName: string
+    customerEmail: string
+    customerPhone: string
+    customerAddress: string
+    paymentMethod: string
+    shippingMethod: string
+    notes: string
+  }) => Promise<string>
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined)
@@ -59,6 +70,35 @@ export function CartProvider({ children }: { children: ReactNode }) {
     return items.reduce((total, item) => total + item.price * item.quantity, 0)
   }
 
+  const createOrderFromCart = async (orderData: {
+    customerId: string
+    customerName: string
+    customerEmail: string
+    customerPhone: string
+    customerAddress: string
+    paymentMethod: string
+    shippingMethod: string
+    notes: string
+  }): Promise<string> => {
+    if (items.length === 0) {
+      throw new Error("No hay items en el carrito")
+    }
+
+    const order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> = {
+      ...orderData,
+      items: items,
+      total: getTotalPrice(),
+      status: 'Pendiente',
+    }
+
+    const orderId = await createOrder(order)
+    
+    // Limpiar el carrito después de crear el pedido
+    clearCart()
+    
+    return orderId
+  }
+
   return (
     <CartContext.Provider
       value={{
@@ -69,6 +109,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clearCart,
         getTotalItems,
         getTotalPrice,
+        createOrderFromCart,
       }}
     >
       {children}
