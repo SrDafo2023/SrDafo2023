@@ -1,30 +1,22 @@
 import * as admin from 'firebase-admin';
 import { ServiceAccount } from 'firebase-admin';
-import * as path from 'path';
-import * as fs from 'fs';
+import * as dotenv from 'dotenv';
 
-const serviceAccountPath = path.resolve(__dirname, '..', 'pethelp-credencial.json');
+// Cargar variables de entorno
+dotenv.config();
 
-// Verificar si el archivo existe
-if (!fs.existsSync(serviceAccountPath)) {
-  throw new Error(`Firebase credentials file not found at ${serviceAccountPath}`);
-}
-
-// Leer y parsear el archivo de credenciales
-let serviceAccount;
-try {
-  const rawdata = fs.readFileSync(serviceAccountPath, 'utf8');
-  serviceAccount = JSON.parse(rawdata);
-} catch (error: any) {
-  throw new Error(`Error reading Firebase credentials: ${error.message}`);
-}
+const serviceAccount: ServiceAccount = {
+  projectId: process.env.FIREBASE_PROJECT_ID,
+  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+};
 
 // Inicializar Firebase Admin si aún no está inicializado
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount as ServiceAccount),
-      databaseURL: `https://${serviceAccount.project_id}.firebaseio.com`,
+      credential: admin.credential.cert(serviceAccount),
+      databaseURL: process.env.FIREBASE_DATABASE_URL,
     });
     console.log('Firebase Admin initialized successfully');
   } catch (error: any) {

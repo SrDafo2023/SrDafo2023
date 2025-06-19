@@ -1,4 +1,4 @@
-Ñ# dependencies
+# dependencies
 node_modules/
 /.pnp
 .pnp.js
@@ -12,16 +12,10 @@ node_modules/
 
 # production
 /build
-/dist
 
 # misc
 .DS_Store
 *.pem
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
 
 # debug
 npm-debug.log*
@@ -29,7 +23,11 @@ yarn-debug.log*
 yarn-error.log*
 
 # local env files
-.env*.local
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # vercel
 .vercel
@@ -38,11 +36,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Firebase
-**/firebase-admin-sdk.json
+# Firebase credentials
 **/pethelp-credencial.json
-**/firebase-credentials.json
-**/serviceAccountKey.json
+Backend/.env
 
 # IDE
 .idea/
