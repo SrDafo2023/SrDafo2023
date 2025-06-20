@@ -27,9 +27,12 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useState } from "react"
+import { useRouter } from 'next/navigation'
+import { LocationsMap } from "@/components/locations/locations-map"
 
 export default function LocationsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const router = useRouter()
 
   const locations = [
     {
@@ -41,6 +44,8 @@ export default function LocationsPage() {
       status: "active",
       services: ["Baño y Corte", "Spa Completo", "Cuidado Dental"],
       appointmentsToday: 8,
+      lat: 40.7128,
+      lng: -74.0060,
     },
     {
       id: 2,
@@ -51,6 +56,8 @@ export default function LocationsPage() {
       status: "active",
       services: ["Baño y Corte", "Corte de Uñas"],
       appointmentsToday: 5,
+      lat: 40.7580,
+      lng: -73.9855,
     },
     {
       id: 3,
@@ -61,6 +68,8 @@ export default function LocationsPage() {
       status: "active",
       services: ["Baño y Corte", "Spa Completo", "Desparasitación"],
       appointmentsToday: 12,
+      lat: 40.7484,
+      lng: -73.9857,
     },
     {
       id: 4,
@@ -71,14 +80,31 @@ export default function LocationsPage() {
       status: "maintenance",
       services: ["Baño y Corte"],
       appointmentsToday: 0,
+      lat: 40.7050,
+      lng: -74.0095,
     },
   ]
+
+  const handleViewOnMap = (address: string) => {
+    const encodedAddress = encodeURIComponent(address)
+    window.open(`https://www.google.com/maps?q=${encodedAddress}`, "_blank")
+  }
+
+  const handleViewAppointments = (locationId: number) => {
+    router.push(`/dashboard/grooming/appointments?locationId=${locationId}`)
+  }
 
   return (
     <div className="flex flex-col">
       <DashboardHeader role="grooming" title="Gestión de Ubicaciones" />
       <main className="flex-1 space-y-4 p-4 md:p-6">
-        <div className="flex items-center justify-between">
+        <div className="border rounded-lg p-4">
+          <h3 className="text-xl font-semibold mb-2">Mapa de Ubicaciones</h3>
+          <p className="text-sm text-muted-foreground mb-4">Vista geográfica de todas las ubicaciones</p>
+          <LocationsMap locations={locations} />
+        </div>
+
+        <div className="flex items-center justify-between mt-6">
           <div className="space-y-1">
             <h2 className="text-2xl font-bold tracking-tight">Ubicaciones</h2>
             <p className="text-muted-foreground">Administra las ubicaciones donde ofreces servicios</p>
@@ -161,9 +187,9 @@ export default function LocationsPage() {
           </div>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {locations.map((location) => (
-            <Card key={location.id}>
+            <Card key={location.id} className="hover:shadow-md transition-shadow duration-300">
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between">
                   <div>
@@ -198,70 +224,55 @@ export default function LocationsPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuLabel>Acciones</DropdownMenuLabel>
                       <DropdownMenuSeparator />
-                      <DropdownMenuItem>Ver en mapa</DropdownMenuItem>
-                      <DropdownMenuItem>Editar ubicación</DropdownMenuItem>
-                      <DropdownMenuItem>Ver citas</DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem>
-                        {location.status === "active" ? "Poner en mantenimiento" : "Activar"}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-600">Eliminar ubicación</DropdownMenuItem>
+                      <DropdownMenuItem>Editar</DropdownMenuItem>
+                      <DropdownMenuItem className="text-red-600">Archivar</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-2">
-                    <MapPinIcon className="h-4 w-4 text-muted-foreground mt-0.5" />
-                    <span className="text-sm">{location.address}</span>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <MapPinIcon className="h-4 w-4" />
+                    <span>{location.address}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <PhoneIcon className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{location.phone}</span>
+                    <PhoneIcon className="h-4 w-4" />
+                    <span>{location.phone}</span>
                   </div>
                   <div className="flex items-center gap-2">
-                    <ClockIcon className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm">{location.hours}</span>
+                    <ClockIcon className="h-4 w-4" />
+                    <span>{location.hours}</span>
                   </div>
-                  <div className="pt-2">
-                    <p className="text-sm font-medium mb-2">Servicios disponibles:</p>
-                    <div className="flex flex-wrap gap-1">
-                      {location.services.map((service, i) => (
-                        <Badge key={i} variant="secondary" className="text-xs">
-                          {service}
-                        </Badge>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex gap-2 pt-2">
-                    <Button variant="outline" size="sm" className="flex-1">
-                      Ver en mapa
-                    </Button>
-                    <Button size="sm" className="flex-1 bg-blue-600 hover:bg-blue-700">
-                      Ver citas
-                    </Button>
-                  </div>
+                </div>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  {location.services.map((service) => (
+                    <Badge key={service} variant="secondary">
+                      {service}
+                    </Badge>
+                  ))}
+                </div>
+                <div className="flex gap-2 pt-4">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="flex-1"
+                    onClick={() => handleViewOnMap(location.address)}
+                  >
+                    Ver en mapa
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    onClick={() => handleViewAppointments(location.id)}
+                  >
+                    Ver citas
+                  </Button>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Mapa de Ubicaciones</CardTitle>
-            <CardDescription>Vista geográfica de todas las ubicaciones</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[400px] bg-muted/20 rounded-md flex items-center justify-center">
-              <div className="text-center">
-                <MapPinIcon className="h-12 w-12 text-muted-foreground mx-auto mb-2" />
-                <p className="text-muted-foreground">Aquí se mostraría un mapa interactivo con todas las ubicaciones</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
       </main>
     </div>
   )

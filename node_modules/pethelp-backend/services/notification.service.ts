@@ -6,15 +6,35 @@ export class BackendNotificationService {
   private readonly messaging: admin.messaging.Messaging;
 
   constructor() {
-    this.db = admin.firestore();
-    this.messaging = admin.messaging();
+    try {
+      if (!admin.apps.length) {
+        throw new Error('Firebase Admin no está inicializado. Asegúrate de inicializarlo antes de usar este servicio.');
+      }
+      this.db = admin.firestore();
+      this.messaging = admin.messaging();
+      console.log('Servicio de notificaciones inicializado correctamente');
+    } catch (error) {
+      console.error('Error al inicializar el servicio de notificaciones:', error);
+      throw error;
+    }
   }
 
   // Guardar o actualizar token FCM de un usuario
   async saveUserFCMToken(userId: string, token: string): Promise<void> {
     try {
+      if (!userId || !token) {
+        throw new Error('userId y token son requeridos');
+      }
+
       console.log(`Guardando token FCM para usuario ${userId}`);
       const userRef = this.db.collection('users').doc(userId);
+      
+      // Verificar si el usuario existe
+      const userDoc = await userRef.get();
+      if (!userDoc.exists) {
+        throw new Error(`Usuario ${userId} no encontrado`);
+      }
+
       await userRef.update({
         fcmTokens: admin.firestore.FieldValue.arrayUnion(token)
       });
@@ -249,5 +269,37 @@ export class BackendNotificationService {
       chunks.push(array.slice(i, i + size));
     }
     return chunks;
+  }
+
+  // Método para verificar la validez de un token FCM
+  private async isValidFCMToken(token: string): Promise<boolean> {
+    try {
+      await this.messaging.send({
+        token,
+        data: { test: 'true' },
+      }, true); // dryRun = true
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  // Método para manejar errores de envío de notificaciones
+  private handleSendError(error: any, userIds: string[]): void {
+    console.error('Error al enviar notificación:', {
+      error: error.message,
+      code: error.code,
+      userIds
+    });
+
+    // Registrar el error para análisis posterior
+    this.db.collection('notification_errors').add({
+      error: error.message,
+      code: error.code,
+      userIds,
+      timestamp: admin.firestore.FieldValue.serverTimestamp()
+    }).catch(err => {
+      console.error('Error al registrar el error de notificación:', err);
+    });
   }
 } 

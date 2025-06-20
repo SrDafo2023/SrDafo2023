@@ -1,8 +1,8 @@
 // Import the functions you need from the SDKs you need
-import { initializeApp, getApps, getApp } from "firebase/app";
+import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 // import { getAnalytics } from "firebase/analytics"; // Commented out as not currently used
-import { getAuth, connectAuthEmulator } from "firebase/auth"; // Importamos Auth
-import { getFirestore, connectFirestoreEmulator } from "firebase/firestore"; // Importamos Firestore
+import { getAuth, connectAuthEmulator, Auth } from "firebase/auth"; // Importamos Auth
+import { getFirestore, connectFirestoreEmulator, Firestore } from "firebase/firestore"; // Importamos Firestore
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -17,23 +17,15 @@ const firebaseConfig = {
 };
 
 // Initialize Firebase
-let app;
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
+
 try {
     app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-    console.log('Firebase initialized successfully');
-} catch (error) {
-    console.error('Error initializing Firebase:', error);
-    throw error;
-}
-
-// Initialize Firebase services
-let auth;
-let db;
-
-try {
     auth = getAuth(app);
     db = getFirestore(app);
-    console.log('Firebase services initialized successfully');
+    console.log('Firebase initialized successfully');
 
     // Connect to emulators in development
     if (process.env.NODE_ENV === 'development') {
@@ -42,7 +34,7 @@ try {
         // connectFirestoreEmulator(db, 'localhost', 8080);
     }
 } catch (error) {
-    console.error('Error initializing Firebase services:', error);
+    console.error('Error initializing Firebase:', error);
     throw error;
 }
 

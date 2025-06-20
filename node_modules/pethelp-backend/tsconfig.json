@@ -1,28 +1,16 @@
 {
   "compilerOptions": {
-    "target": "es2017",
     "module": "commonjs",
-    "outDir": "./dist",
-    "rootDir": "../",
+    "noImplicitReturns": true,
+    "noUnusedLocals": true,
+    "outDir": "lib",
+    "sourceMap": true,
     "strict": true,
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "baseUrl": "../",
-    "paths": {
-      "@shared/*": ["shared/*"]
-    }
+    "target": "es2017",
+    "esModuleInterop": true
   },
+  "compileOnSave": true,
   "include": [
-    "./src/**/*.ts",
-    "./routes/**/*.ts",
-    "./services/**/*.ts",
-    "./config/**/*.ts",
-    "server.ts",
-    "../shared/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
+    "src"
   ]
 } 
