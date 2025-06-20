@@ -5,7 +5,7 @@ import { DashboardHeader } from "@/components/dashboard-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Pet, savePet } from "@/lib/pet-storage"
@@ -13,186 +13,127 @@ import { useUser } from "@/hooks/useUser"
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import { Loader2Icon } from 'lucide-react' // Import loader icon
+import { useToast } from '@/components/ui/use-toast'
+import Image from 'next/image'
+import { AdoptionFormModal } from "@/components/AdoptionFormModal"
 
 export default function AddPetPage() {
-  const { user, loading } = useUser(); // Get loading state from the hook
+  const { user } = useUser();
   const router = useRouter();
+  const { toast } = useToast();
 
-  const [formData, setFormData] = useState({
-    name: '',
-    species: '',
-    breed: '',
-    age: '',
-    description: '',
-    imageUrl: '',
-    // Add a state for the file input if you plan to handle file uploads
-    // petImageFile: null as File | null,
-  });
-
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  // Handle file input change
-  // const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   if (e.target.files && e.target.files[0]) {
-  //     setFormData(prev => ({ ...prev, petImageFile: e.target.files![0] }));
-  //   } else {
-  //     setFormData(prev => ({ ...prev, petImageFile: null }));
-  //   }
-  // };
+  const [name, setName] = useState('');
+  const [species, setSpecies] = useState('');
+  const [breed, setBreed] = useState('');
+  const [age, setAge] = useState('');
+  const [description, setDescription] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // The check for user and userType should be sufficient now that loading is handled
-    if (!user || user.userType !== 'adoption-center') {
-      toast.error("Debes ser un centro de adopción para añadir mascotas.");
+    if (!user) {
+      toast({ title: 'Error', description: 'Debes iniciar sesión para añadir una mascota.', variant: 'destructive' });
+      return;
+    }
+    if (!name || !species || !age || !description) {
+      toast({ title: 'Campos incompletos', description: 'Por favor, rellena todos los campos obligatorios.', variant: 'destructive' });
       return;
     }
 
-    if (!formData.name || !formData.species || !formData.age || !formData.description) {
-        toast.error("Por favor, llena todos los campos obligatorios.");
-        return;
-    }
-
+    setIsSubmitting(true);
     try {
-      const ageNumber = parseInt(formData.age);
-      if (isNaN(ageNumber) || ageNumber < 0) {
-          toast.error("La edad debe ser un número válido.");
-          return;
-      }
-
-      // TODO: Implement image upload to Firebase Storage here if handling file uploads
-      // Get the download URL after uploading and use it in savePet
-      let imageUrlToSave = formData.imageUrl; // Use the URL from the input for now
-
-      // Example for file upload (requires Firebase Storage implementation)
-      // if (formData.petImageFile) {
-      //   const storageRef = firebase.storage().ref(`pet_images/${formData.petImageFile.name}`);
-      //   const snapshot = await storageRef.put(formData.petImageFile);
-      //   imageUrlToSave = await snapshot.ref.getDownloadURL();
-      // }
-
       await savePet({
-        name: formData.name,
-        species: formData.species,
-        breed: formData.breed || undefined,
-        age: ageNumber,
-        description: formData.description,
-        imageUrl: imageUrlToSave === '' ? null : imageUrlToSave,
+        name,
+        species,
+        breed,
+        age: parseInt(age),
+        description,
+        imageUrl,
         adoptionCenterId: user.id,
-      });
+        status: 'available',
+      }, imageFile);
 
-      toast.success("Mascota añadida con éxito!");
-      setFormData({ // Clear form
-        name: '',
-        species: '',
-        breed: '',
-        age: '',
-        description: '',
-        imageUrl: '',
-        // petImageFile: null,
-      });
-      // Optionally redirect to the pets list page
+      toast({ title: '¡Éxito!', description: `${name} ha sido añadido a la lista de adopción.` });
       router.push('/dashboard/adoption-center/pets');
-
     } catch (error) {
-      console.error("Error saving pet:", error); // Log the full error object
-      console.error("Error name:", (error as any).name);
-      console.error("Error code:", (error as any).code);
-      console.error("Error message:", (error as any).message);
-      toast.error("Hubo un error al añadir la mascota.");
+      console.error(error);
+      toast({ title: 'Error', description: 'No se pudo guardar la mascota.', variant: 'destructive' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Show loading state or access denied message while loading or if user is not an adoption center
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <Loader2Icon className="h-8 w-8 animate-spin text-purple-600" />
-        <p className="text-muted-foreground mt-2">Cargando...</p>
-      </div>
-    );
-  }
-
-  // Redirect or show access denied if user is not an adoption center after loading
-  if (!user || user.userType !== 'adoption-center') {
-     // Optionally redirect to a different page, e.g., a homepage or an access denied page
-     // router.push('/'); 
-     return (
-         <div className="flex flex-col items-center justify-center h-screen">
-             <h2 className="text-2xl font-bold">Acceso Denegado</h2>
-             <p className="text-muted-foreground">Debes iniciar sesión como Centro de Adopción para añadir mascotas.</p>
-         </div>
-     );
-  }
-
   return (
-    <div className="flex flex-col">
-      {/* Removed DashboardHeader as it's in the layout.tsx */}
-      <main className="flex-1 space-y-4 p-4 md:p-6">
-        <div className="space-y-1">
-          <h2 className="text-2xl font-bold tracking-tight">Añadir Nueva Mascota</h2>
-          <p className="text-muted-foreground">Ingresa los detalles de la mascota disponible para adopción.</p>
-        </div>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Detalles de la Mascota</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="grid gap-4 py-4">
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="name" className="text-right">Nombre</Label>
-                <Input id="name" value={formData.name} onChange={e => handleInputChange('name', e.target.value)} className="col-span-3" required />
+    <div className="p-4 sm:p-6 lg:p-8">
+      <DashboardHeader title="Añadir Nueva Mascota" />
+      <Card>
+        <CardHeader>
+          <CardTitle>Detalles de la Mascota</CardTitle>
+          <CardDescription>Completa la información de la nueva mascota que entrará en adopción.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="name">Nombre</Label>
+                <Input id="name" value={name} onChange={(e) => setName(e.target.value)} required />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="species" className="text-right">Especie</Label>
-                <Select onValueChange={value => handleInputChange('species', value)} value={formData.species} required>
-                  <SelectTrigger className="col-span-3">
+              <div className="space-y-2">
+                <Label htmlFor="species">Especie</Label>
+                <Select onValueChange={setSpecies} value={species}>
+                  <SelectTrigger id="species">
                     <SelectValue placeholder="Selecciona especie" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="dog">Perro</SelectItem>
-                    <SelectItem value="cat">Gato</SelectItem>
-                    <SelectItem value="other">Otro</SelectItem>
+                    <SelectItem value="perro">Perro</SelectItem>
+                    <SelectItem value="gato">Gato</SelectItem>
+                    <SelectItem value="conejo">Conejo</SelectItem>
+                    <SelectItem value="hamster">Hámster</SelectItem>
+                    <SelectItem value="ave">Ave</SelectItem>
+                    <SelectItem value="otro">Otro</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="breed" className="text-right">Raza (Opcional)</Label>
-                <Input id="breed" value={formData.breed} onChange={e => handleInputChange('breed', e.target.value)} className="col-span-3" />
+              <div className="space-y-2">
+                <Label htmlFor="breed">Raza</Label>
+                <Input id="breed" value={breed} onChange={(e) => setBreed(e.target.value)} />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="age" className="text-right">Edad (Años)</Label>
-                <Input id="age" type="number" value={formData.age} onChange={e => handleInputChange('age', e.target.value)} className="col-span-3" required min="0" />
+              <div className="space-y-2">
+                <Label htmlFor="age">Edad (Años)</Label>
+                <Input id="age" type="number" value={age} onChange={(e) => setAge(e.target.value)} required />
               </div>
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="description" className="text-right">Descripción</Label>
-                <Textarea id="description" value={formData.description} onChange={e => handleInputChange('description', e.target.value)} className="col-span-3" required />
-              </div>
-
-              {/* Input for Image URL */}
-              <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="imageUrl" className="text-right">URL Imagen (Opcional)</Label>
-                <Input id="imageUrl" type="url" value={formData.imageUrl} onChange={e => handleInputChange('imageUrl', e.target.value)} className="col-span-3" placeholder="https://example.com/pet-image.jpg" />
-              </div>
-
-              {/* TODO: Add file input for image upload to Firebase Storage */}
-              {/* <div className="grid grid-cols-4 items-center gap-4">
-                <Label htmlFor="petImage" className="text-right">Subir Imagen (Opcional)</Label>
-                <Input id="petImage" type="file" onChange={handleFileChange} className="col-span-3" accept="image/*" />
-              </div> */}
-
-              <div className="flex justify-end">
-                <Button type="submit" className="bg-purple-600 hover:bg-purple-700">Añadir Mascota</Button>
-              </div>
-            </form>
-          </CardContent>
-        </Card>
-
-      </main>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="description">Descripción</Label>
+              <Textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} required />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="image-upload">Subir Imagen (Recomendado)</Label>
+              <Input id="image-upload" type="file" onChange={(e) => setImageFile(e.target.files ? e.target.files[0] : null)} />
+              <p className="text-xs text-muted-foreground pt-1">O pega una URL de una imagen existente a continuación.</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="image-url">URL Imagen (Opcional)</Label>
+              <Input id="image-url" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://example.com/pet-image.jpg" />
+            </div>
+            <div className="flex justify-end">
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
+                Añadir Mascota
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+      {isModalOpen && selectedPet && (
+        <AdoptionFormModal pet={selectedPet}>
+          <div />
+        </AdoptionFormModal>
+      )}
     </div>
   )
 } 

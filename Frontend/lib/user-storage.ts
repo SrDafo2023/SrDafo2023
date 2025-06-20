@@ -1,5 +1,11 @@
 import { db } from '@/config/firebase/firebase'; // Import the Firestore instance
-import { collection, getDocs, addDoc, doc, setDoc, getDoc, query, where, updateDoc, deleteDoc } from 'firebase/firestore'; // Import Firestore functions
+import { collection, getDocs, addDoc, doc, setDoc, getDoc, query, where, updateDoc, deleteDoc, serverTimestamp, DocumentData } from 'firebase/firestore'; // Import Firestore functions
+import { type AppUser } from '@/hooks/useUser'; // Importar la interfaz unificada
+import { getAuth } from 'firebase/auth';
+
+// Tipos simplificados para este módulo
+type UserRole = AppUser['userType'];
+type UserStatus = 'active' | 'inactive';
 
 export interface User {
   id: string
@@ -17,19 +23,44 @@ export interface User {
   rut?: string // Add RUT field here if you want to store it in Firestore user document
 }
 
+export interface UserProfile {
+    id: string;
+    email: string;
+    userType: 'admin' | 'petshop' | 'grooming' | 'adoption-center' | 'user';
+    // Profile fields
+    displayName?: string; // Could be user's name or center's name
+    address?: string;
+    phone?: string;
+    description?: string;
+    // Timestamps
+    createdAt: any;
+    updatedAt?: any;
+}
+
 // We will no longer use a class for storage, but rather functions
 
 const usersCollection = collection(db, 'users'); // Reference to the 'users' collection
 
 // Function to get all users from Firestore
-export async function getUsers(): Promise<User[]> {
+export async function getUsers(): Promise<AppUser[]> {
   try {
     const usersSnapshot = await getDocs(usersCollection);
-    return usersSnapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data(),
-      createdAt: doc.data().createdAt?.toDate() || new Date(),
-    })) as User[];
+    return usersSnapshot.docs.map(doc => {
+      const data = doc.data();
+      // Firestore Timestamps need to be converted to JS Date objects.
+      // We also handle cases where createdAt might be missing for older documents.
+      const createdAtDate = data.createdAt?.toDate ? data.createdAt.toDate() : null;
+
+      return {
+        id: doc.id,
+        email: data.email,
+        userType: data.userType || 'user',
+        displayName: data.displayName || `${data.firstName || ''} ${data.lastName || ''}`.trim(),
+        createdAt: createdAtDate,
+        // Ensure status is also passed, default to 'inactive' if not present
+        status: data.status || 'inactive'
+      } as AppUser;
+    });
   } catch (error) {
     console.error('Error getting users:', error);
     throw new Error('No se pudieron obtener los usuarios');
@@ -201,5 +232,86 @@ export async function createUser(userData: Omit<User, 'id'>): Promise<string> {
   } catch (error) {
     console.error('Error creating user:', error);
     throw new Error('No se pudo crear el usuario');
+  }
+}
+
+// Obtener el perfil de un usuario
+export async function getUserProfile(userId: string): Promise<AppUser | null> {
+    try {
+        const userRef = doc(db, 'users', userId);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+            const data = userSnap.data();
+            return {
+                id: userSnap.id,
+                ...data
+            } as AppUser;
+        }
+        return null;
+    } catch (error) {
+        console.error("Error fetching user profile:", error);
+        throw new Error("Could not fetch user profile.");
+    }
+}
+
+// Actualizar el perfil de un usuario
+export async function updateUserProfile(userId: string, data: Partial<Omit<AppUser, 'id' | 'email' | 'userType'>>): Promise<void> {
+    try {
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, {
+            ...data,
+            updatedAt: serverTimestamp()
+        });
+    } catch (error) {
+        console.error("Error updating user profile:", error);
+        throw new Error("Could not update user profile.");
+    }
+}
+
+/**
+ * Updates a user's role by calling a secure backend endpoint.
+ * This function should only be callable by an admin user from the frontend.
+ * The backend endpoint will verify the caller's admin privileges.
+ * @param userId - The ID of the user to update.
+ * @param role - The new role to assign.
+ */
+export async function updateUserRole(userId: string, role: UserRole): Promise<void> {
+  const auth = getAuth();
+  const currentUser = auth.currentUser;
+
+  if (!currentUser) {
+    throw new Error('No hay un usuario autenticado para realizar esta acción.');
+  }
+
+  try {
+    const idToken = await currentUser.getIdToken(true); // Get the JWT token
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    
+    if (!apiUrl) {
+      throw new Error("La URL de la API no está configurada en las variables de entorno.");
+    }
+
+    const response = await fetch(`${apiUrl}/users/${userId}/role`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({ role }),
+    });
+
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`Error del servidor: ${response.status} - ${errorData}`);
+    }
+
+  } catch (error) {
+    console.error('Error updating user role via backend:', error);
+    // Lanza el error para que pueda ser manejado por la UI (e.g., mostrar un toast)
+    if (error instanceof Error) {
+        throw new Error(`No se pudo actualizar el rol del usuario: ${error.message}`);
+    }
+    throw new Error('Ocurrió un error desconocido al actualizar el rol del usuario.');
   }
 }

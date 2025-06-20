@@ -17,7 +17,7 @@ import {
   MessageSquare,
   LogOut
 } from "lucide-react"
-import { useFirebaseAuth } from "../../../../Base_de_datos/firebase-auth-provider"
+import { useFirebaseAuth } from "@/config/firebase/firebase-auth-provider"
 
 const sidebarItems = [
   {

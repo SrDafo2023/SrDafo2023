@@ -1,55 +1,59 @@
 import { db } from '@/config/firebase/firebase'; // Import the Firestore instance
-import { collection, getDocs, addDoc, doc, setDoc, getDoc, query, where, deleteDoc } from 'firebase/firestore'; // Import Firestore functions
+import { collection, getDocs, addDoc, doc, setDoc, getDoc, query, where, deleteDoc, updateDoc, serverTimestamp, type Timestamp } from 'firebase/firestore'; // Import Firestore functions
 import { Pet } from './pet-storage';
 
 export interface AdoptionForm {
-  id: string;
-  petId: string; // ID of the pet being applied for
-  userId: string; // ID of the user who submitted the form (Firebase Auth UID or Firestore Doc ID)
-  applicantName: string;
-  applicantEmail: string;
-  applicantPhone: string;
-  applicantRUT: string;
-  answers: Record<string, string>; // Or a more structured type for answers
-  submittedAt: Date;
-  // We might also want to store the adoptionCenterId here for easier querying
-  adoptionCenterId?: string; // Add this for easier querying from adoption center side
+  id?: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  petId: string;
+  petName: string;
+  adoptionCenterId: string;
+  status: 'pending' | 'approved' | 'rejected';
+  answers: Record<string, string>;
+  createdAt?: any;
 }
 
 // We will no longer use a class for storage, but rather functions
 
-const adoptionFormsCollection = collection(db, 'adoptionForms'); // Reference to the 'adoptionForms' collection
+const formsCollection = collection(db, 'adoption-forms');
 
-// Function to get all adoption forms from Firestore
-export async function getForms(): Promise<AdoptionForm[]> {
-  const formsSnapshot = await getDocs(adoptionFormsCollection);
-  const formsList = formsSnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data() as any // Cast to any for now, proper typing needed
-  })) as AdoptionForm[]; // Cast the result to AdoptionForm[]
-  return formsList;
+// Guardar un nuevo formulario de adopción
+export const saveAdoptionForm = async (formData: Omit<AdoptionForm, 'id' | 'createdAt'>) => {
+  try {
+    const docRef = await addDoc(collection(db, 'adoptionForms'), {
+      ...formData,
+      createdAt: serverTimestamp(),
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error saving adoption form:', error);
+    throw new Error('Could not save adoption form.');
+  }
+};
+
+// Obtener todos los formularios de adopción
+export async function getAdoptionForms(): Promise<AdoptionForm[]> {
+    try {
+        const snapshot = await getDocs(formsCollection);
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as AdoptionForm));
+    } catch (error) {
+        console.error("Error fetching adoption forms: ", error);
+        throw new Error("Could not fetch adoption forms.");
+    }
 }
 
-// Function to save a new adoption form to Firestore
-// Note: Ensure userId and petId are valid IDs from your users and pets collections.
-export async function saveForm(form: Omit<AdoptionForm, "id" | "submittedAt"> & { submittedAt?: Date }): Promise<AdoptionForm> {
-   // Before saving the form, we need the adoptionCenterId from the pet
-   const pet = await getPetById(form.petId); // Assuming getPetById function exists or fetching pet here
-   if (!pet) {
-       throw new Error("Pet not found for this form.");
-   }
-
-  // Use addDoc to let Firestore generate an ID
-  const newFormRef = await addDoc(adoptionFormsCollection, {
-    ...form,
-    adoptionCenterId: pet.adoptionCenterId, // Add adoptionCenterId from the pet
-    submittedAt: form.submittedAt || new Date(), // Use provided date or current date
-  });
-
-  const newFormDoc = await getDoc(newFormRef);
-  const newForm = { id: newFormDoc.id, ...newFormDoc.data() as any } as AdoptionForm;
-  return newForm;
-}
+// Actualizar el estado de un formulario
+export const updateAdoptionFormStatus = async (formId: string, status: 'approved' | 'rejected') => {
+    try {
+        const formRef = doc(db, 'adoptionForms', formId);
+        await updateDoc(formRef, { status });
+    } catch (error) {
+        console.error("Error updating adoption form status:", error);
+        throw new Error("Could not update adoption form status.");
+    }
+};
 
 // Helper function to get a pet by ID (needed for saveForm)
 // This should ideally be imported from lib/pet-storage, but defined here for self-containment in the edit.
@@ -64,7 +68,7 @@ async function getPetById(petId: string): Promise<Pet | null> {
 
 // Function to get forms by pet ID from Firestore
 export async function getFormsByPetId(petId: string): Promise<AdoptionForm[]> {
-  const q = query(adoptionFormsCollection, where("petId", "==", petId));
+  const q = query(formsCollection, where("petId", "==", petId));
   const querySnapshot = await getDocs(q);
 
   const formsList = querySnapshot.docs.map(doc => ({
@@ -76,23 +80,28 @@ export async function getFormsByPetId(petId: string): Promise<AdoptionForm[]> {
 }
 
 // Function to get forms by adoption center ID from Firestore
-export async function getFormsByAdoptionCenterId(adoptionCenterId: string): Promise<AdoptionForm[]> {
-   // Query forms where the adoptionCenterId matches
-   const q = query(adoptionFormsCollection, where("adoptionCenterId", "==", adoptionCenterId));
-   const querySnapshot = await getDocs(q);
+export const getAdoptionFormsByAdoptionCenter = async (adoptionCenterId: string): Promise<AdoptionForm[]> => {
+    try {
+        const formsRef = collection(db, 'adoptionForms');
+        const q = query(formsRef, where("adoptionCenterId", "==", adoptionCenterId));
+        const querySnapshot = await getDocs(q);
 
-   const formsList = querySnapshot.docs.map(doc => ({
-     id: doc.id,
-     ...doc.data() as any
-   })) as AdoptionForm[];
+        const forms: AdoptionForm[] = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+        } as AdoptionForm));
 
-   return formsList;
-}
+        return forms;
+    } catch (error) {
+        console.error("Error fetching adoption forms by center:", error);
+        throw new Error("Could not fetch adoption forms.");
+    }
+};
 
 // Function to delete a form by ID from Firestore
 export async function deleteForm(id: string): Promise<boolean> {
   try {
-    const formDocRef = doc(db, 'adoptionForms', id);
+    const formDocRef = doc(db, 'adoption-forms', id);
     await deleteDoc(formDocRef);
     return true; // Deletion successful
   } catch (error) {

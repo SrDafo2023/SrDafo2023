@@ -6,16 +6,13 @@ import { getPets, Pet } from "@/lib/pet-storage";
 import { Loader2Icon } from "lucide-react";
 import Image from 'next/image';
 import { toast } from "sonner";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
-import AdoptionFormModal from "@/components/AdoptionFormModal";
+import { AdoptionFormModal } from "@/components/AdoptionFormModal";
 import { useRouter } from "next/navigation";
 
 export default function CentrosAdopcionPage() {
   const [pets, setPets] = useState<Pet[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
   const router = useRouter();
 
   useEffect(() => {
@@ -60,13 +57,12 @@ export default function CentrosAdopcionPage() {
             {pets.map((pet) => (
               <Card key={pet.id}>
                 {pet.imageUrl && (
-                  <div className="relative w-full h-40 rounded-t-lg overflow-hidden">
+                  <div className="relative w-full h-40 rounded-t-lg overflow-hidden bg-gray-100 dark:bg-gray-800">
                     <Image
                       src={pet.imageUrl}
                       alt={pet.name}
                       layout="fill"
-                      objectFit="cover"
-                      className="transition-transform duration-300 ease-in-out hover:scale-105"
+                      className="object-contain transition-transform duration-300 ease-in-out hover:scale-105"
                     />
                   </div>
                 )}
@@ -78,15 +74,11 @@ export default function CentrosAdopcionPage() {
                   <p><span className="font-semibold text-gray-800">Edad:</span> {pet.age} {pet.age === 1 ? 'año' : 'años'}</p>
                   <p className="mt-2"><span className="font-semibold text-gray-800">Descripción:</span> {pet.description}</p>
                   <div className="mt-4">
-                    <Button
-                      className="w-full bg-purple-600 hover:bg-purple-700"
-                      onClick={() => {
-                        setSelectedPet(pet);
-                        setIsModalOpen(true);
-                      }}
-                    >
-                      Adoptar
-                    </Button>
+                    <AdoptionFormModal pet={pet}>
+                      <Button className="w-full bg-purple-600 hover:bg-purple-700">
+                        Adoptar
+                      </Button>
+                    </AdoptionFormModal>
                   </div>
                 </CardContent>
               </Card>
@@ -94,20 +86,10 @@ export default function CentrosAdopcionPage() {
           </div>
         )}
       </main>
-       {/* Render the modal */}
-      {isModalOpen && selectedPet && (
-        <AdoptionFormModal
-          pet={selectedPet}
-          isOpen={isModalOpen}
-          onClose={() => {
-            setIsModalOpen(false);
-            setSelectedPet(null);
-          }}
-        />
-      )}
+      
       {/* Botón Volver al principio */}
       <button
-        onClick={() => window.location.href = '/'}
+        onClick={() => router.push('/')}
         style={{
           position: 'fixed',
           top: '20px',

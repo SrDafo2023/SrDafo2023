@@ -124,30 +124,30 @@ export function DashboardSidebar({ userRole, userName }: DashboardSidebarProps) 
       {/* Sidebar */}
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-20 w-64 bg-white border-r border-gray-200 transition-transform duration-300 ease-in-out transform lg:translate-x-0 lg:static lg:w-64 lg:shrink-0",
+          "fixed inset-y-0 left-0 z-20 w-64 bg-gray-900 text-white border-r border-gray-700 transition-transform duration-300 ease-in-out transform lg:translate-x-0 lg:static lg:w-64 lg:shrink-0",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <div className="flex flex-col h-full">
           {/* Sidebar Header */}
-          <div className="h-16 flex items-center justify-between px-4 border-b">
+          <div className="h-16 flex items-center justify-between px-4 border-b border-gray-700">
             <div className="flex items-center">
               <div className="w-8 h-8 rounded-full bg-gradient-to-r from-purple-600 to-blue-600 flex items-center justify-center text-white font-bold">
                 P
               </div>
-              <span className="ml-2 font-semibold text-gray-800">PetHelp</span>
+              <span className="ml-2 font-semibold text-white">PetHelp</span>
             </div>
           </div>
 
           {/* User Info */}
-          <div className="p-4 border-b">
+          <div className="p-4 border-b border-gray-700">
             <div className="flex items-center">
-              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center">
-                <span className="text-gray-600 font-medium">{userName.charAt(0)}</span>
+              <div className="w-10 h-10 rounded-full bg-gray-700 flex items-center justify-center">
+                <span className="text-gray-300 font-medium">{userName.charAt(0)}</span>
               </div>
               <div className="ml-3">
-                <p className="text-sm font-medium text-gray-800">{userName}</p>
-                <p className="text-xs text-gray-500">{userRole}</p>
+                <p className="text-sm font-medium text-white">{userName}</p>
+                <p className="text-xs text-gray-400">{userRole}</p>
               </div>
             </div>
           </div>
@@ -167,7 +167,10 @@ export function DashboardSidebar({ userRole, userName }: DashboardSidebarProps) 
                       <div className="mb-1">
                         <Button
                           variant="ghost"
-                          className={cn("w-full justify-between", active && "bg-gray-100 text-purple-600")}
+                          className={cn(
+                            "w-full justify-between text-white hover:bg-gray-700",
+                            active && "bg-blue-600 text-white",
+                          )}
                           onClick={() => toggleSubmenu(item.title)}
                         >
                           <div className="flex items-center">
@@ -185,8 +188,8 @@ export function DashboardSidebar({ userRole, userName }: DashboardSidebarProps) 
                                 <Link
                                   href={child.href}
                                   className={cn(
-                                    "flex items-center text-sm px-2 py-1.5 rounded-md hover:bg-gray-100",
-                                    isActive(child.href) && "bg-purple-50 text-purple-600 font-medium",
+                                    "flex items-center text-sm px-2 py-1.5 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white",
+                                    isActive(child.href) && "bg-blue-600 text-white font-medium",
                                   )}
                                 >
                                   {child.title}
@@ -200,8 +203,8 @@ export function DashboardSidebar({ userRole, userName }: DashboardSidebarProps) 
                       <Link
                         href={item.href}
                         className={cn(
-                          "flex items-center px-2 py-1.5 rounded-md hover:bg-gray-100",
-                          active && "bg-purple-50 text-purple-600 font-medium",
+                          "flex items-center px-2 py-1.5 rounded-md text-gray-300 hover:bg-gray-700 hover:text-white",
+                          active && "bg-blue-600 text-white font-medium",
                         )}
                       >
                         <IconComponent className="mr-2 h-4 w-4" />
@@ -215,10 +218,10 @@ export function DashboardSidebar({ userRole, userName }: DashboardSidebarProps) 
           </nav>
 
           {/* Sidebar Footer */}
-          <div className="p-4 border-t">
+          <div className="p-4 border-t border-gray-700">
             <Button
               variant="ghost"
-              className="w-full justify-start text-red-600 hover:bg-red-50 hover:text-red-700"
+              className="w-full justify-start text-red-500 hover:bg-red-900 hover:text-red-400"
               asChild
             >
               <Link href="/auth">

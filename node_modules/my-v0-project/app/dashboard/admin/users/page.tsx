@@ -13,33 +13,39 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { MoreHorizontalIcon, PlusIcon } from "lucide-react"
+import { MoreHorizontalIcon, PlusIcon, Loader2Icon } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import Image from "next/image"
-import { getUsers, updateUser, deleteUser, createUser, type User } from "@/lib/user-storage"
+import { getUsers, updateUser, deleteUser, createUser, type User, updateUserRole } from "@/lib/user-storage"
+import { type AppUser } from '@/hooks/useUser'
+import { useToast } from '@/components/ui/use-toast'
+import { DashboardHeader } from '@/components/dashboard-header'
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([])
+  const [users, setUsers] = useState<AppUser[]>([])
   const [loading, setLoading] = useState(true)
   const [apiError, setApiError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
 
   // Estados para los modales y usuario seleccionado
-  const [selectedUser, setSelectedUser] = useState<User | null>(null)
+  const [selectedUser, setSelectedUser] = useState<AppUser | null>(null)
   const [showDetails, setShowDetails] = useState(false)
   const [showEdit, setShowEdit] = useState(false)
   const [showRole, setShowRole] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [selectedRole, setSelectedRole] = useState<AppUser['userType'] | ''>('')
+  const [isUpdating, setIsUpdating] = useState(false)
+  const { toast } = useToast()
 
   // Cargar usuarios desde Firebase al montar
   useEffect(() => {
     loadUsers()
-  }, [])
+  }, [toast])
 
   const loadUsers = async () => {
     try {
@@ -49,30 +55,31 @@ export default function UsersPage() {
       setApiError(null)
     } catch (error) {
       setApiError("No se pudo cargar la lista de usuarios.")
-      console.error(error)
+      toast({ title: 'Error', description: 'No se pudieron cargar los usuarios.', variant: 'destructive' })
     } finally {
       setLoading(false)
     }
   }
 
   // Handlers para abrir modales
-  const handleShowDetails = (user: User) => {
+  const handleShowDetails = (user: AppUser) => {
     setSelectedUser(user)
     setShowDetails(true)
   }
 
-  const handleShowEdit = (user: User) => {
+  const handleShowEdit = (user: AppUser) => {
     setSelectedUser(user)
     setFormError(null)
     setShowEdit(true)
   }
 
-  const handleShowRole = (user: User) => {
+  const handleShowRole = (user: AppUser) => {
     setSelectedUser(user)
+    setSelectedRole(user.userType)
     setShowRole(true)
   }
 
-  const handleShowDelete = (user: User) => {
+  const handleShowDelete = (user: AppUser) => {
     setSelectedUser(user)
     setShowDelete(true)
   }
@@ -81,11 +88,11 @@ export default function UsersPage() {
   const validateEmail = (email: string) => /\S+@\S+\.\S+/.test(email)
 
   // Handler para editar usuario
-  const handleEditUser = async (updated: Partial<User>) => {
+  const handleEditUser = async (updated: Partial<AppUser>) => {
     if (!selectedUser) return
 
     setFormError(null)
-    if (!updated.name) {
+    if (!updated.displayName) {
       setFormError("El nombre no puede estar vacío.")
       return
     }
@@ -104,15 +111,20 @@ export default function UsersPage() {
   }
 
   // Handler para cambiar rol
-  const handleChangeRole = async (role: User['role']) => {
-    if (!selectedUser) return
+  const handleRoleChange = async () => {
+    if (!selectedUser || !selectedRole) return
 
+    setIsUpdating(true)
     try {
-      await updateUser(selectedUser.id, { role })
-      setUsers(users.map(u => u.id === selectedUser.id ? { ...u, role } : u))
+      await updateUserRole(selectedUser.id, selectedRole)
+      setUsers(users.map(u => u.id === selectedUser.id ? { ...u, userType: selectedRole } : u))
+      toast({ title: 'Éxito', description: `El rol de ${selectedUser.displayName} ha sido actualizado a ${selectedRole}.` })
       setShowRole(false)
     } catch (error) {
       setApiError("No se pudo cambiar el rol. Intenta de nuevo.")
+      toast({ title: 'Error', description: 'No se pudo cambiar el rol. Intenta de nuevo.', variant: 'destructive' })
+    } finally {
+      setIsUpdating(false)
     }
   }
 
@@ -130,7 +142,7 @@ export default function UsersPage() {
   }
 
   // Handler para activar/desactivar usuario
-  const handleToggleUserStatus = async (user: User) => {
+  const handleToggleUserStatus = async (user: AppUser) => {
     const newStatus = user.status === "active" ? "inactive" : "active"
     try {
       await updateUser(user.id, { status: newStatus })
@@ -141,9 +153,9 @@ export default function UsersPage() {
   }
 
   // Filtrar usuarios según término de búsqueda
-  const filteredUsers = users.filter(user => 
-    user.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredUsers = users.filter(user =>
+    (user.displayName?.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (user.email?.toLowerCase().includes(searchTerm.toLowerCase()))
   )
 
   if (loading) {
@@ -212,77 +224,76 @@ export default function UsersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={
-                        user.role === "admin"
-                          ? "border-purple-500 text-purple-700 bg-purple-50"
-                          : user.role === "petshop"
-                            ? "border-blue-500 text-blue-700 bg-blue-50"
-                            : user.role === "grooming"
-                              ? "border-green-500 text-green-700 bg-green-50"
-                              : "border-gray-500 text-gray-700 bg-gray-50"
-                      }
-                    >
-                      {user.role === "admin"
-                        ? "Administrador"
-                        : user.role === "petshop"
-                          ? "PetShop"
-                          : user.role === "grooming"
-                            ? "Grooming"
-                            : "Usuario"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge
-                      variant="outline"
-                      className={
-                        user.status === "active"
-                          ? "border-green-500 text-green-700 bg-green-50"
-                          : "border-red-500 text-red-700 bg-red-50"
-                      }
-                    >
-                      {user.status === "active" ? "Activo" : "Inactivo"}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {user.createdAt.toLocaleDateString()}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreHorizontalIcon className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuLabel>Acciones</DropdownMenuLabel>
-                        <DropdownMenuItem onClick={() => handleShowDetails(user)}>
-                          Ver detalles
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleShowEdit(user)}>
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleShowRole(user)}>
-                          Cambiar rol
-                        </DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem
-                          className="text-red-600"
-                          onClick={() => handleShowDelete(user)}
-                        >
-                          Eliminar
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {loading ? (
+                <TableRow><TableCell colSpan={4} className="text-center h-24"><Loader2Icon className="mx-auto h-8 w-8 animate-spin" /></TableCell></TableRow>
+              ) : (
+                filteredUsers.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.displayName}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant="outline"
+                        className={
+                          user.userType === "admin"
+                            ? "border-purple-500 text-purple-700 bg-purple-50"
+                            : user.userType === "petshop"
+                              ? "border-blue-500 text-blue-700 bg-blue-50"
+                              : user.userType === "grooming"
+                                ? "border-green-500 text-green-700 bg-green-50"
+                                : "border-gray-500 text-gray-700 bg-gray-50"
+                        }
+                      >
+                        {user.userType === "admin"
+                          ? "Administrador"
+                          : user.userType === "petshop"
+                            ? "PetShop"
+                            : user.userType === "grooming"
+                              ? "Estilista"
+                              : user.userType === "adoption-center"
+                                ? "Centro de Adopción"
+                                : "Usuario"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={user.status === "active" ? "default" : "secondary"}>
+                        {user.status === "active" ? "Activo" : "Inactivo"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "N/D"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0">
+                            <MoreHorizontalIcon className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Acciones</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => handleShowDetails(user)}>
+                            Ver detalles
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleShowEdit(user)}>
+                            Editar
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleShowRole(user)}>
+                            Cambiar rol
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            className="text-red-600"
+                            onClick={() => handleShowDelete(user)}
+                          >
+                            Eliminar
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
@@ -298,7 +309,7 @@ export default function UsersPage() {
             <div className="space-y-4">
               <div>
                 <Label>Nombre</Label>
-                <p>{selectedUser.name}</p>
+                <p>{selectedUser.displayName}</p>
               </div>
               <div>
                 <Label>Email</Label>
@@ -306,7 +317,7 @@ export default function UsersPage() {
               </div>
               <div>
                 <Label>Rol</Label>
-                <p className="capitalize">{selectedUser.role}</p>
+                <p className="capitalize">{selectedUser.userType}</p>
               </div>
               <div>
                 <Label>Estado</Label>
@@ -333,9 +344,9 @@ export default function UsersPage() {
                 <Label htmlFor="name">Nombre</Label>
                 <Input
                   id="name"
-                  defaultValue={selectedUser.name}
+                  defaultValue={selectedUser.displayName}
                   onChange={(e) =>
-                    setSelectedUser({ ...selectedUser, name: e.target.value })
+                    setSelectedUser({ ...selectedUser, displayName: e.target.value })
                   }
                 />
               </div>
@@ -380,8 +391,8 @@ export default function UsersPage() {
           {selectedUser && (
             <div className="space-y-4">
               <Select
-                defaultValue={selectedUser.role}
-                onValueChange={(value: User['role']) => handleChangeRole(value)}
+                value={selectedRole}
+                onValueChange={(value) => setSelectedRole(value as AppUser['userType'])}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecciona un rol" />
@@ -390,9 +401,14 @@ export default function UsersPage() {
                   <SelectItem value="admin">Administrador</SelectItem>
                   <SelectItem value="petshop">PetShop</SelectItem>
                   <SelectItem value="grooming">Grooming</SelectItem>
+                  <SelectItem value="adoption-center">Centro de Adopción</SelectItem>
                   <SelectItem value="user">Usuario</SelectItem>
                 </SelectContent>
               </Select>
+              <Button onClick={handleRoleChange} disabled={!selectedRole || isUpdating} className="mt-4 w-full">
+                {isUpdating && <Loader2Icon className="mr-2 h-4 w-4 animate-spin" />}
+                Guardar Cambios
+              </Button>
             </div>
           )}
         </DialogContent>

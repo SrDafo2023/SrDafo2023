@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, type ReactNode } from "react"
 import { createOrder, type Order } from "@/lib/order-storage"
+import { useToast } from "@/components/ui/use-toast"
 
 interface CartItem {
   id: number
@@ -35,6 +36,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined)
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([])
+  const { toast } = useToast()
 
   const addToCart = (product: { id: number; name: string; price: number; image?: string }) => {
     setItems((prev) => {
@@ -43,6 +45,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
         return prev.map((item) => (item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item))
       }
       return [...prev, { ...product, quantity: 1 }]
+    })
+    toast({
+      title: "¡Agregado!",
+      description: `"${product.name}" se ha agregado a tu carrito.`,
+      duration: 10000,
+      className: "bg-green-100 border-green-300 text-green-800",
     })
   }
 
@@ -86,12 +94,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     const order: Omit<Order, 'id' | 'createdAt' | 'updatedAt'> = {
       ...orderData,
-      items: items,
+      items: items.map(item => ({
+        productId: String(item.id),
+        productName: item.name,
+        quantity: item.quantity,
+        price: item.price,
+        image: item.image,
+      })),
       total: getTotalPrice(),
-      status: 'Pendiente',
+      status: 'pending',
     }
 
-    const orderId = await createOrder(order)
+    const orderId = await createOrder(order as Omit<Order, 'id'>)
     
     // Limpiar el carrito después de crear el pedido
     clearCart()

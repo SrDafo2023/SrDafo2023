@@ -1,94 +1,172 @@
 "use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import Link from 'next/link'
-import { useUser } from "@/hooks/useUser"
-import { useEffect, useState } from "react"
-import { getPetsByAdoptionCenterId } from "@/lib/pet-storage"
-import { Loader2Icon, PawPrintIcon } from 'lucide-react'
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import Image from 'next/image';
+import { db } from '@/config/firebase/firebase';
+import { collection, query, where, getDocs, orderBy, limit } from 'firebase/firestore';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { PawPrintIcon, FileTextIcon, HandshakeIcon } from 'lucide-react';
+import { Pet } from '@/lib/pet-storage';
 
-export default function AdoptionCenterDashboard() {
-  const { user, loading: userLoading } = useUser();
-  const [petCount, setPetCount] = useState<number | null>(null);
-  const [petsLoading, setPetsLoading] = useState(true);
+interface Stats {
+    availablePets: number;
+    adoptionRequests: number;
+    activeProcesses: number;
+}
 
-  useEffect(() => {
-    const fetchPetCount = async () => {
-      if (user?.userType === 'adoption-center') {
-        try {
-          setPetsLoading(true);
-          const userPets = await getPetsByAdoptionCenterId(user.id);
-          setPetCount(userPets.length);
-        } catch (error) {
-          console.error("Error fetching pet count:", error);
-          setPetCount(0); // Assume 0 on error
-        } finally {
-          setPetsLoading(false);
-        }
-      } else {
-        setPetCount(0); // No user or not an adoption center
-        setPetsLoading(false);
-      }
-    };
+export default function AdoptionCenterDashboardPage() {
+    const [stats, setStats] = useState<Stats | null>(null);
+    const [recentPets, setRecentPets] = useState<Pet[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
-    if (!userLoading) { // Only fetch pets once user data is loaded
-      fetchPetCount();
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            try {
+                setLoading(true);
+                // Contar mascotas disponibles
+                const petsQuery = query(collection(db, 'pets'), where('status', '==', 'disponible'));
+                const petsSnapshot = await getDocs(petsQuery);
+                const availablePets = petsSnapshot.size;
+
+                // Fetch recent pets
+                const recentPetsQuery = query(collection(db, 'pets'), orderBy('createdAt', 'desc'), limit(4));
+                const recentPetsSnapshot = await getDocs(recentPetsQuery);
+                const petsData = recentPetsSnapshot.docs.map(doc => ({
+                    id: doc.id,
+                    ...doc.data(),
+                })) as Pet[];
+                setRecentPets(petsData);
+
+                // TODO: Implementar lógica para contar solicitudes y procesos cuando las colecciones existan
+                const adoptionRequests = 0;
+                const activeProcesses = 0;
+
+                setStats({ availablePets, adoptionRequests, activeProcesses });
+            } catch (err) {
+                console.error("Error fetching dashboard data:", err);
+                setError("No se pudieron cargar los datos del panel.");
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="p-6">
+                <h1 className="text-3xl font-bold mb-6">Panel del Centro de Adopción</h1>
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <Card><CardHeader><Skeleton className="h-6 w-3/4" /></CardHeader><CardContent><Skeleton className="h-8 w-1/2" /></CardContent></Card>
+                    <Card><CardHeader><Skeleton className="h-6 w-3/4" /></CardHeader><CardContent><Skeleton className="h-8 w-1/2" /></CardContent></Card>
+                    <Card><CardHeader><Skeleton className="h-6 w-3/4" /></CardHeader><CardContent><Skeleton className="h-8 w-1/2" /></CardContent></Card>
+                </div>
+                <div className="mt-8">
+                    <Skeleton className="h-8 w-1/3 mb-4" />
+                    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                        {[...Array(4)].map((_, i) => (
+                            <Card key={i}>
+                                <Skeleton className="h-48 w-full" />
+                                <CardHeader><Skeleton className="h-6 w-3/4" /></CardHeader>
+                                <CardContent><Skeleton className="h-5 w-1/4" /></CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
     }
-  }, [user, userLoading]);
+    
+    if (error) {
+        return <div className="p-6 text-center text-red-500">{error}</div>;
+    }
 
-  // Show loading state while user or pets are loading
-  if (userLoading || petsLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen">
-        <Loader2Icon className="h-8 w-8 animate-spin text-purple-600" />
-        <p className="text-muted-foreground mt-2">Cargando panel...</p>
-      </div>
+        <div className="p-6">
+            <h1 className="text-3xl font-bold mb-6">Panel del Centro de Adopción</h1>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <Link href="/dashboard/adoption-center/pets">
+                    <Card className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Mascotas en Adopción</CardTitle>
+                            <PawPrintIcon className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stats?.availablePets}</div>
+                            <p className="text-xs text-muted-foreground">Total de mascotas disponibles</p>
+                        </CardContent>
+                    </Card>
+                </Link>
+
+                <Link href="#">
+                     <Card className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors opacity-50 cursor-not-allowed">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Solicitudes de Adopción</CardTitle>
+                            <FileTextIcon className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stats?.adoptionRequests}</div>
+                             <p className="text-xs text-muted-foreground">Nuevas solicitudes sin revisar</p>
+                        </CardContent>
+                    </Card>
+                </Link>
+
+                <Link href="#">
+                    <Card className="hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors opacity-50 cursor-not-allowed">
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Procesos de Adopción</CardTitle>
+                             <HandshakeIcon className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{stats?.activeProcesses}</div>
+                            <p className="text-xs text-muted-foreground">Adopciones actualmente en proceso</p>
+                        </CardContent>
+                    </Card>
+                </Link>
+            </div>
+            
+            <div className="mt-8">
+                <h2 className="text-2xl font-bold mb-4">Mascotas Registradas Recientemente</h2>
+                {recentPets.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                        {recentPets.map((pet) => (
+                            <Card key={pet.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                                <div className="relative h-48 w-full bg-gray-100 dark:bg-gray-800">
+                                    <Image
+                                        src={pet.imageUrl || '/placeholder.jpg'}
+                                        alt={`Foto de ${pet.name}`}
+                                        layout="fill"
+                                        className="object-contain"
+                                    />
+                                </div>
+                                <CardHeader>
+                                    <CardTitle>{pet.name}</CardTitle>
+                                    <CardDescription>{pet.breed || pet.species}</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    {pet.status ? (
+                                        <span className={`px-2 py-1 text-xs rounded-full ${
+                                            pet.status === 'disponible' ? 'bg-green-200 text-green-800' :
+                                            pet.status === 'en proceso' ? 'bg-yellow-200 text-yellow-800' :
+                                            'bg-gray-200 text-gray-800'
+                                        }`}>
+                                            {pet.status.charAt(0).toUpperCase() + pet.status.slice(1)}
+                                        </span>
+                                    ) : null}
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-12 text-gray-500 bg-gray-50 rounded-lg">
+                        <p>No hay mascotas registradas recientemente.</p>
+                    </div>
+                )}
+            </div>
+        </div>
     );
-  }
-
-  // Redirect or show access denied if user is not an adoption center after loading
-  if (!user || user.userType !== 'adoption-center') {
-     return (
-         <div className="flex flex-col items-center justify-center h-screen">
-             <h2 className="text-2xl font-bold">Acceso Denegado</h2>
-             <p className="text-muted-foreground">Debes iniciar sesión como Centro de Adopción para ver esta página.</p>
-         </div>
-     );
-  }
-
-  return (
-    <div className="flex flex-col">
-      {/* <DashboardHeader role="adoption-center" title="Panel del Centro de Adopción" /> */}
-      <main className="flex-1 space-y-4 p-4 md:p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-1">
-            <h2 className="text-2xl font-bold tracking-tight">Bienvenido, Centro de Adopción</h2>
-            <p className="text-muted-foreground">Gestiona tus mascotas en adopción y procesos.</p>
-          </div>
-          {/* Add button to add new pet */}
-          <Button asChild className="bg-purple-600 hover:bg-purple-700">
-            <Link href="/dashboard/adoption-center/add-pet">Añadir Nueva Mascota</Link>
-          </Button>
-        </div>
-
-        {/* Add specific cards/components for Adoption Center dashboard here */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {/* Example Card */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Mascotas en Adopción</CardTitle>
-              <PawPrintIcon className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{petCount !== null ? petCount : ''}</div> {/* Display actual count */}
-              <p className="text-xs text-muted-foreground">Total de mascotas disponibles</p>
-            </CardContent>
-          </Card>
-          {/* Add more cards as needed */}
-        </div>
-
-      </main>
-    </div>
-  )
 } 

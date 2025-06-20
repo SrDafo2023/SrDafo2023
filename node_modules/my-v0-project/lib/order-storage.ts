@@ -2,8 +2,8 @@ import { db } from '@/config/firebase/firebase';
 import { collection, addDoc, serverTimestamp, query, where, getDocs, orderBy, doc, updateDoc } from 'firebase/firestore';
 
 export interface OrderItem {
-  id: number;
-  name: string;
+  productId: string;
+  productName: string;
   price: number;
   quantity: number;
   image?: string;
@@ -18,7 +18,7 @@ export interface Order {
   customerAddress: string;
   items: OrderItem[];
   total: number;
-  status: 'Pendiente' | 'En proceso' | 'Enviado' | 'Completado';
+  status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
   paymentMethod: string;
   shippingMethod: string;
   notes: string;

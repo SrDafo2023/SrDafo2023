@@ -1,0 +1,72 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper function to check for admin role
+    function isAdmin() {
+      // Check if the requesting user's document in 'users' collection has userType 'admin'
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'admin';
+    }
+
+    // --- Users Collection ---
+    match /users/{userId} {
+      // READ: 
+      // - An admin can read any user's document.
+      // - A logged-in user can read their own document.
+      allow get: if request.auth != null && (isAdmin() || request.auth.uid == userId);
+      
+      // LIST (querying collection):
+      // - Only admins can list all users.
+      allow list: if request.auth != null && isAdmin();
+
+      // WRITE:
+      // - A logged-in user can update their own profile.
+      // - An admin can update any user's profile (covered by the backend logic now).
+      allow update: if request.auth != null && request.auth.uid == userId;
+
+      // CREATE: Allow user creation (typically handled by a signup function).
+      // Let's keep this open for now for registration purposes.
+      allow create: if request.auth != null;
+    }
+
+    // --- Pets Collection ---
+    match /pets/{petId} {
+      // Anyone can view pets
+      allow get, list: if true; 
+      
+      // Only authenticated users who are 'adoption-center' OR an 'admin' can create/update/delete pets.
+      allow create, update, delete: if request.auth != null && 
+                                       (isAdmin() || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.userType == 'adoption-center');
+    }
+
+    // --- Adoption Forms Collection ---
+    match /adoptionForms/{formId} {
+      // READ: 
+      // - The user who submitted the form can read it.
+      // - The adoption center associated with the pet can read it.
+      allow get: if request.auth != null && 
+                   (request.auth.uid == resource.data.userId || 
+                    request.auth.uid == resource.data.adoptionCenterId);
+      
+      // LIST:
+      // - Adoption centers can list forms directed to them.
+      // - Users can list their own submitted forms.
+      allow list: if request.auth != null; // Queries should be filtered in the app's code.
+
+      // CREATE: Any authenticated user can create an adoption request.
+      allow create: if request.auth != null;
+
+      // UPDATE: Only the adoption center can update the status (approve/reject).
+      allow update: if request.auth != null && request.auth.uid == resource.data.adoptionCenterId;
+    }
+
+    // --- Notifications Collection ---
+    match /notifications/{notificationId} {
+        // A user can only read and write (update/delete) their own notifications
+        allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+  }
+} 
