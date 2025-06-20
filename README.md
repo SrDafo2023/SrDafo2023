@@ -158,3 +158,69 @@ pethelp/
 ├── Frontend/        # Next.js + Firebase Client
 └── shared/         # Tipos y utilidades compartidas
 ```
+
+# 📦 Publicar un Proyecto en GitHub (Guía Rápida)
+
+Este documento explica los pasos básicos para subir (publicar) un proyecto a un repositorio de GitHub usando la línea de comandos.
+
+## 1. Clona el repositorio (si aún no lo tienes)
+
+```bash
+git clone https://github.com/usuario/repositorio.git
+cd repositorio
+```
+
+## 2. Agrega tus archivos al proyecto
+
+Copia o crea los archivos de tu proyecto dentro de la carpeta del repositorio.
+
+## 3. Verifica el estado de los archivos
+
+```bash
+git status
+```
+
+## 4. Agrega los archivos al área de preparación (staging)
+
+```bash
+git add .
+```
+
+## 5. Haz un commit con un mensaje descriptivo
+
+```bash
+git commit -m "Descripción de los cambios o publicación inicial"
+```
+
+## 6. Sube los cambios al repositorio remoto
+
+```bash
+git push origin main
+```
+
+> **Nota:** Si la rama principal se llama diferente (por ejemplo, `master`), reemplaza `main` por el nombre correcto.
+
+---
+
+## Ejemplo de flujo completo
+
+```bash
+git add .
+git commit -m "Publicación inicial del proyecto"
+git push origin main
+```
+
+---
+
+## Consejos
+
+- Asegúrate de tener permisos de escritura en el repositorio.
+- Si es la primera vez que usas Git en tu PC, configura tu usuario:
+  ```bash
+  git config --global user.name "Tu Nombre"
+  git config --global user.email "tuemail@ejemplo.com"
+  ```
+
+---
+
+¡Listo! Así es como publicamos nuestro proyecto en GitHub. Si tienes dudas, pregunta a cualquier miembro del equipo.
