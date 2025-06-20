@@ -224,3 +224,5 @@ git push origin main
 ---
 
 ¡Listo! Así es como publicamos nuestro proyecto en GitHub. Si tienes dudas, pregunta a cualquier miembro del equipo.
+
+DIEGO ALBURQUEQUE
