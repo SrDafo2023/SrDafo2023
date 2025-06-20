@@ -116,24 +116,6 @@ export default function OfertasPage() {
       </div>
 
       <div className="container mx-auto px-4 py-8">
-        {/* Promotional Banner */}
-        <div className="mb-8 bg-gradient-to-r from-orange-500 to-red-500 text-white rounded-lg p-6">
-          <div className="flex flex-wrap items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-2xl">🚚</span>
-              <div>
-                <span className="font-bold text-lg">DELIVERY EXPRESS</span>
-                <span className="ml-4 text-yellow-200">En compras sobre $60.000</span>
-              </div>
-            </div>
-            <div className="text-sm">
-              Válido del 29/05/25 al 01/06/25.
-              <br />
-              Sujeto a disponibilidad.
-            </div>
-          </div>
-        </div>
-
         {/* Products Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {products.map((product) => (

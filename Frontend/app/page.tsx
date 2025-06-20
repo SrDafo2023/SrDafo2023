@@ -246,29 +246,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Promotional Banner */}
-      <div className="bg-gradient-to-r from-orange-500 to-red-500 py-3">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-wrap items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-2xl">🚚</span>
-              <div>
-                <span className="font-bold text-lg">DELIVERY EXPRESS</span>
-                <span className="ml-4 text-yellow-200">En compras sobre $60.000</span>
-              </div>
-            </div>
-            <Button asChild className="bg-white text-orange-600 hover:bg-gray-100 font-bold">
-              <Link href="/ofertas">COMPRAR</Link>
-            </Button>
-            <div className="text-sm">
-              Válido del 29/05/25 al 01/06/25.
-              <br />
-              Sujeto a disponibilidad.
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-orange-100 to-yellow-100 py-16">
         <div className="container mx-auto px-4">
@@ -280,9 +257,7 @@ export default function Home() {
                   <br />
                   <span className="text-orange-600">NATURAL</span>
                 </h1>
-                <Button asChild size="lg" className="bg-gray-800 hover:bg-gray-900 text-white px-8 py-3 rounded-full">
-                  <Link href="/ofertas/semana-natural">COMPRAR</Link>
-                </Button>
+                <p className="mt-2 text-gray-600">Alimentos y snacks saludables para tu mascota.</p>
               </div>
             </div>
 

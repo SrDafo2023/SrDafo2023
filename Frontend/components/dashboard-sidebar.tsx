@@ -4,7 +4,9 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
+import { signOut } from "firebase/auth"
+import { useFirebaseAuth } from "@/config/firebase/firebase-auth-provider"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import {
@@ -93,6 +95,8 @@ interface DashboardSidebarProps {
 
 export function DashboardSidebar({ userRole, userName }: DashboardSidebarProps) {
   const pathname = usePathname()
+  const router = useRouter()
+  const { auth } = useFirebaseAuth()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null)
 
@@ -106,6 +110,18 @@ export function DashboardSidebar({ userRole, userName }: DashboardSidebarProps) 
   const isActive = (href: string) => {
     return pathname === href || pathname.startsWith(`${href}/`)
   }
+
+  const handleSignOut = async () => {
+    if (!auth) return;
+    try {
+      await signOut(auth);
+      // Redirect to the homepage or login page after sign out
+      router.push('/'); 
+    } catch (error) {
+      console.error("Error signing out: ", error);
+      // Optionally, show a toast notification to the user
+    }
+  };
 
   return (
     <>
@@ -222,12 +238,10 @@ export function DashboardSidebar({ userRole, userName }: DashboardSidebarProps) 
             <Button
               variant="ghost"
               className="w-full justify-start text-red-500 hover:bg-red-900 hover:text-red-400"
-              asChild
+              onClick={handleSignOut}
             >
-              <Link href="/auth">
-                <LogOutIcon className="mr-2 h-4 w-4" />
-                Cerrar sesión
-              </Link>
+              <LogOutIcon className="mr-2 h-4 w-4" />
+              Cerrar sesión
             </Button>
           </div>
         </div>
