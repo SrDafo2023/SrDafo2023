@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import { useAuthState } from "react-firebase-hooks/auth"
 import { auth } from "@/config/firebase/firebase"
 import { GroomingNav } from "@/components/ui/grooming-nav"
-import { Calendar, Users, Scissors, MapPin, Settings, LayoutDashboard } from "lucide-react"
+import { Calendar, Users, Scissors, MapPin, Settings, LayoutDashboard, MessageSquare } from "lucide-react"
 import Link from "next/link"
 import {
   Bell,
@@ -76,6 +76,11 @@ export default function GroomingLayout({
       title: "Facturación",
       href: "/dashboard/grooming/billing",
       icon: CreditCard,
+    },
+    {
+      title: "Reseñas",
+      href: "/dashboard/grooming/reviews",
+      icon: MessageSquare,
     },
     {
       title: "Configuración",

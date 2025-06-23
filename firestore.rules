@@ -72,6 +72,20 @@ service cloud.firestore {
     match /orders/{orderId} {
       // Only admins can read/list all orders
       allow get, list: if request.auth != null && isAdmin();
+      allow read: if request.auth.token.role == 'admin';
+      allow write: if request.auth.token.role == 'admin';
+    }
+
+    // Permite a los usuarios autenticados leer las reseñas de Grooming
+    match /groomingReviews/{reviewId} {
+      allow read: if request.auth != null;
+      // De momento no permitimos escritura, para evitar spam.
+      // Esto se podría habilitar con una función de backend en el futuro.
+      allow write: if false; 
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
     }
   }
 } 
