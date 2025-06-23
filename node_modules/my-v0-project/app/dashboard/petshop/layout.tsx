@@ -15,9 +15,13 @@ import {
   DollarSign,
   HelpCircle,
   MessageSquare,
-  LogOut
+  LogOut,
+  CreditCard,
+  Users,
+  LineChart
 } from "lucide-react"
 import { useFirebaseAuth } from "@/config/firebase/firebase-auth-provider"
+import { Badge } from "@/components/ui/badge"
 
 const sidebarItems = [
   {
@@ -51,6 +55,11 @@ const sidebarItems = [
     icon: DollarSign
   },
   {
+    title: "Facturación",
+    href: "/dashboard/petshop/billing",
+    icon: CreditCard
+  },
+  {
     title: "Reportes",
     href: "/dashboard/petshop/reports",
     icon: FileText
@@ -69,7 +78,7 @@ const sidebarItems = [
     title: "Feedback",
     href: "/dashboard/petshop/feedback",
     icon: MessageSquare
-  }
+  },
 ]
 
 export default function PetshopLayout({

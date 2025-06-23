@@ -73,6 +73,11 @@ export default function GroomingLayout({
       icon: MapPin,
     },
     {
+      title: "Facturación",
+      href: "/dashboard/grooming/billing",
+      icon: CreditCard,
+    },
+    {
       title: "Configuración",
       href: "/dashboard/grooming/settings",
       icon: Settings,
