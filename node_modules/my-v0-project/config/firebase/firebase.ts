@@ -3,6 +3,7 @@ import { initializeApp, getApps, getApp, FirebaseApp } from "firebase/app";
 // import { getAnalytics } from "firebase/analytics"; // Commented out as not currently used
 import { getAuth, connectAuthEmulator, Auth } from "firebase/auth"; // Importamos Auth
 import { getFirestore, connectFirestoreEmulator, Firestore } from "firebase/firestore"; // Importamos Firestore
+import { getStorage, connectStorageEmulator, FirebaseStorage } from "firebase/storage"; // Importamos Storage
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -20,11 +21,13 @@ const firebaseConfig = {
 let app: FirebaseApp;
 let auth: Auth;
 let db: Firestore;
+let storage: FirebaseStorage; // Variable para Storage
 
 try {
     app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
     db = getFirestore(app);
+    storage = getStorage(app); // Inicializamos Storage
     console.log('Firebase initialized successfully');
 
     // Connect to emulators in development
@@ -32,6 +35,7 @@ try {
         // Uncomment these lines if you want to use Firebase emulators
         // connectAuthEmulator(auth, 'http://localhost:9099');
         // connectFirestoreEmulator(db, 'localhost', 8080);
+        // connectStorageEmulator(storage, 'localhost', 9199);
     }
 } catch (error) {
     console.error('Error initializing Firebase:', error);
@@ -42,5 +46,6 @@ export {
     app,
     auth,
     db,
+    storage, // Exportamos Storage
     // analytics, // Exportamos Analytics si lo vas a usar
 }; 

@@ -3,6 +3,11 @@ import { collection, getDocs, addDoc, doc, setDoc, getDoc, query, where, updateD
 import { type AppUser } from '@/hooks/useUser'; // Importar la interfaz unificada
 import { getAuth } from 'firebase/auth';
 
+// --- API Configuration ---
+// Hardcoding the local API URL for development since .env file is problematic.
+// For production, this should be an environment variable.
+const apiUrl = 'http://127.0.0.1:5001/pethelp-a4e95/us-central1/api';
+
 // Tipos simplificados para este módulo
 type UserRole = AppUser['userType'];
 type UserStatus = 'active' | 'inactive';
@@ -270,48 +275,35 @@ export async function updateUserProfile(userId: string, data: Partial<Omit<AppUs
 }
 
 /**
- * Updates a user's role by calling a secure backend endpoint.
- * This function should only be callable by an admin user from the frontend.
- * The backend endpoint will verify the caller's admin privileges.
- * @param userId - The ID of the user to update.
- * @param role - The new role to assign.
+ * Updates a user's role by calling the backend API.
+ * @param userId The ID of the user to update.
+ * @param role The new role to assign.
  */
 export async function updateUserRole(userId: string, role: UserRole): Promise<void> {
+  if (!apiUrl) {
+    throw new Error("La URL de la API no está configurada.");
+  }
+
   const auth = getAuth();
   const currentUser = auth.currentUser;
 
   if (!currentUser) {
-    throw new Error('No hay un usuario autenticado para realizar esta acción.');
+    throw new Error("No user is logged in.");
   }
 
-  try {
-    const idToken = await currentUser.getIdToken(true); // Get the JWT token
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-    
-    if (!apiUrl) {
-      throw new Error("La URL de la API no está configurada en las variables de entorno.");
-    }
+  const token = await currentUser.getIdToken();
 
-    const response = await fetch(`${apiUrl}/users/${userId}/role`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${idToken}`,
-      },
-      body: JSON.stringify({ role }),
-    });
+  const response = await fetch(`${apiUrl}/users/${userId}/role`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`,
+    },
+    body: JSON.stringify({ role }),
+  });
 
-    if (!response.ok) {
-      const errorData = await response.text();
-      throw new Error(`Error del servidor: ${response.status} - ${errorData}`);
-    }
-
-  } catch (error) {
-    console.error('Error updating user role via backend:', error);
-    // Lanza el error para que pueda ser manejado por la UI (e.g., mostrar un toast)
-    if (error instanceof Error) {
-        throw new Error(`No se pudo actualizar el rol del usuario: ${error.message}`);
-    }
-    throw new Error('Ocurrió un error desconocido al actualizar el rol del usuario.');
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.error || 'Failed to update user role.');
   }
 }

@@ -2,6 +2,8 @@ import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
+import notificationRoutes from "../routes/notification.routes";
+import { createSubscription } from "../services/subscription.service";
 
 // Inicializar Firebase Admin
 admin.initializeApp();
@@ -43,6 +45,27 @@ const isAdmin = async (req: Request, res: Response, next: NextFunction): Promise
     }
 };
 
+// Middleware to check if the user is authenticated (without checking for admin role)
+const isAuthenticated = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+    const { authorization } = req.headers;
+
+    if (!authorization || !authorization.startsWith('Bearer ')) {
+        res.status(401).send({ error: 'Unauthorized: No token provided.' });
+        return;
+    }
+
+    const idToken = authorization.split('Bearer ')[1];
+    try {
+        const decodedToken = await admin.auth().verifyIdToken(idToken);
+        // Attach user to the request object, so we can get the UID in the handler
+        (req as any).user = decodedToken;
+        next();
+    } catch (error) {
+        console.error('Error verifying token:', error);
+        res.status(403).send({ error: 'Forbidden: Invalid token.' });
+    }
+};
+
 // Helper para convertir Timestamps
 const convertTimestampToDate = (data: any) => {
   if (!data) return data;
@@ -57,22 +80,51 @@ const convertTimestampToDate = (data: any) => {
 
 // --- Rutas de la API ---
 
+// Define routes
+app.use("/notifications", notificationRoutes);
+
 // Secure endpoint to update a user's role
-app.post("/users/:userId/role", isAdmin, async (req: Request, res: Response): Promise<void> => {
+// This now uses PATCH for semantic correctness and updates Auth claims.
+app.patch("/users/:userId/role", isAdmin, async (req: Request, res: Response): Promise<void> => {
     try {
         const { userId } = req.params;
         const { role } = req.body;
 
         if (!role) {
-            res.status(400).send("El campo 'role' es requerido.");
+            res.status(400).send({ error: "Role field is required."});
             return;
         }
 
+        // Set the custom claim for the user in Firebase Auth
+        await admin.auth().setCustomUserClaims(userId, { role });
+
+        // Also update the user's document in Firestore to keep it in sync
         await db.collection('users').doc(userId).update({ userType: role });
-        res.status(200).send({ message: `Rol del usuario ${userId} actualizado a ${role}.` });
+        
+        res.status(200).send({ message: `User role for ${userId} updated to ${role}.` });
     } catch (error) {
-        console.error("Error al actualizar el rol del usuario:", error);
-        res.status(500).send("Error interno del servidor.");
+        console.error("Error updating user role:", error);
+        res.status(500).send({ error: "Internal server error." });
+    }
+});
+
+// Create a new subscription
+app.post("/subscriptions", isAuthenticated, async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { uid } = (req as any).user; // Get UID from authenticated user
+        const { planId } = req.body as { planId: 'monthly' | 'yearly' };
+
+        if (!planId || (planId !== 'monthly' && planId !== 'yearly')) {
+            res.status(400).send({ error: "Field 'planId' is required and must be 'monthly' or 'yearly'."});
+            return;
+        }
+
+        await createSubscription(uid, planId);
+        
+        res.status(200).send({ message: `Subscription created successfully for user ${uid}.` });
+    } catch (error) {
+        console.error("Error creating subscription:", error);
+        res.status(500).send({ error: "Internal server error during subscription." });
     }
 });
 
@@ -272,7 +324,6 @@ app.put("/appointments/:id", async (req: Request, res: Response): Promise<void> 
     res.status(500).send("Error interno del servidor");
   }
 });
-
 
 // Exportar la API como una sola función
 export const api = functions.https.onRequest(app); 

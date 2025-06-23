@@ -6,6 +6,18 @@ import { useAuthState } from "react-firebase-hooks/auth"
 import { auth } from "@/config/firebase/firebase"
 import { GroomingNav } from "@/components/ui/grooming-nav"
 import { Calendar, Users, Scissors, MapPin, Settings, LayoutDashboard } from "lucide-react"
+import Link from "next/link"
+import {
+  Bell,
+  CircleUser,
+  CreditCard,
+  Home,
+  LineChart,
+  Menu,
+  Package,
+  ShoppingBag,
+} from "lucide-react"
+import { Badge } from "@/components/ui/badge"
 
 export default function GroomingLayout({
   children,
