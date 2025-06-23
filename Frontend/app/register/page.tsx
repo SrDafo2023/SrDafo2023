@@ -12,6 +12,8 @@ import { EyeIcon, EyeOffIcon, ArrowLeftIcon, CheckIcon } from "lucide-react"
 import { createUserWithEmailAndPassword, AuthError } from "firebase/auth"
 import { doc, setDoc } from "firebase/firestore"
 import { auth, db } from "@/config/firebase/firebase"
+import { Label } from "@/components/ui/label"
+import { Loader2Icon } from "lucide-react"
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false)
@@ -146,203 +148,75 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-purple-50 to-blue-50 p-4">
-      <Card className="w-full max-w-md shadow-xl border-0">
-        <CardHeader className="space-y-1 text-center pb-6">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mb-4">
-            <span className="text-white text-3xl">🐾</span>
+    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
+      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto grid w-[350px] gap-6">
+          <div className="grid gap-2 text-center">
+            <h1 className="text-3xl font-bold">Crear una cuenta</h1>
+            <p className="text-balance text-muted-foreground">
+              Ingresa tus datos para registrarte
+            </p>
           </div>
-          <CardTitle className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-            Crear Cuenta
-          </CardTitle>
-          <CardDescription className="text-gray-600">Únete a la comunidad PetHelp</CardDescription>
-        </CardHeader>
-        <CardContent>
-          {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">{error}</div>
-          )}
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label htmlFor="firstName" className="text-sm font-medium text-gray-700">
-                  Nombre
-                </label>
-                <Input
-                  id="firstName"
-                  type="text"
-                  value={formData.firstName}
-                  onChange={(e) => handleInputChange("firstName", e.target.value)}
-                  className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <label htmlFor="lastName" className="text-sm font-medium text-gray-700">
-                  Apellido
-                </label>
-                <Input
-                  id="lastName"
-                  type="text"
-                  value={formData.lastName}
-                  onChange={(e) => handleInputChange("lastName", e.target.value)}
-                  className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium text-gray-700">
-                Correo Electrónico
-              </label>
+          <form onSubmit={handleSubmit} className="grid gap-4">
+            <div className="grid gap-2">
+              <Label htmlFor="email">Correo Electrónico</Label>
               <Input
                 id="email"
                 type="email"
+                placeholder="m@example.com"
+                required
                 value={formData.email}
                 onChange={(e) => handleInputChange("email", e.target.value)}
-                className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                required
+                className="bg-gray-100 dark:bg-gray-800"
               />
             </div>
-
-            <div className="space-y-2">
-              <label htmlFor="phone" className="text-sm font-medium text-gray-700">
-                Teléfono
-              </label>
+            <div className="grid gap-2">
+              <Label htmlFor="password">Contraseña</Label>
               <Input
-                id="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                placeholder="+56 9 1234 5678"
+                id="password"
+                type="password"
                 required
+                value={formData.password}
+                onChange={(e) => handleInputChange("password", e.target.value)}
+                className="bg-gray-100 dark:bg-gray-800"
               />
             </div>
-
-            <div className="space-y-2">
-              <label htmlFor="rut" className="text-sm font-medium text-gray-700">
-                RUT
-              </label>
-              <Input
-                id="rut"
-                type="text"
-                value={formData.rut}
-                onChange={(e) => handleInputChange("rut", e.target.value)}
-                className="border-gray-300 focus:border-purple-500 focus:ring-purple-500"
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="userType" className="text-sm font-medium text-gray-700">
-                Tipo de Usuario
-              </label>
+            <div className="grid gap-2">
+              <Label htmlFor="userType">Tipo de Cuenta</Label>
               <Select onValueChange={(value) => handleInputChange("userType", value)} value={formData.userType}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecciona tu tipo de usuario" />
+                <SelectTrigger className="w-full bg-gray-100 dark:bg-gray-800">
+                  <SelectValue placeholder="Selecciona un tipo de cuenta" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="user">Usuario</SelectItem>
-                  <SelectItem value="petshop">PetShop</SelectItem>
-                  <SelectItem value="grooming">Grooming</SelectItem>
+                  <SelectItem value="petshop">Dueño de PetShop</SelectItem>
+                  <SelectItem value="grooming">Dueño de Peluquería</SelectItem>
                   <SelectItem value="adoption-center">Centro de Adopción</SelectItem>
-                  {/* Admin role is not typically selectable during registration */}
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium text-gray-700">
-                Contraseña
-              </label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={(e) => handleInputChange("password", e.target.value)}
-                  className="border-gray-300 focus:border-purple-500 focus:ring-purple-500 pr-10"
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? (
-                    <EyeOffIcon className="h-4 w-4 text-gray-400" />
-                  ) : (
-                    <EyeIcon className="h-4 w-4 text-gray-400" />
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="text-sm font-medium text-gray-700">
-                Confirmar Contraseña
-              </label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? "text" : "password"}
-                  value={formData.confirmPassword}
-                  onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                  className="border-gray-300 focus:border-purple-500 focus:ring-purple-500 pr-10"
-                  required
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                >
-                  {showConfirmPassword ? (
-                    <EyeOffIcon className="h-4 w-4 text-gray-400" />
-                  ) : (
-                    <EyeIcon className="h-4 w-4 text-gray-400" />
-                  )}
-                </Button>
-              </div>
-            </div>
-
-            <div className="flex justify-between pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                className="flex items-center gap-2"
-                onClick={() => router.push("/")}
-              >
-                <ArrowLeftIcon className="h-4 w-4" />
-                Atrás
-              </Button>
-              <Button
-                type="submit"
-                className="w-full bg-purple-600 hover:bg-purple-700"
-                disabled={isLoading || success}
-              >
-                {isLoading && "Registrando..."}
-                {success && <CheckIcon className="mr-2 h-4 w-4" />}
-                {!isLoading && !success && "Crear cuenta"}
-              </Button>
-            </div>
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+            <Button type="submit" className="w-full" disabled={isLoading || success}>
+              {isLoading ? <Loader2Icon className="animate-spin" /> : success ? <CheckIcon className="mr-2 h-4 w-4" /> : "Crear cuenta"}
+            </Button>
           </form>
-
-          <div className="mt-6 text-center">
-            <p className="text-sm text-gray-600">
-              ¿Ya tienes una cuenta?{" "}
-              <Link href="/login" className="text-purple-600 hover:text-purple-700 font-medium">
-                Inicia sesión aquí
-              </Link>
-            </p>
+          <div className="mt-4 text-center text-sm">
+            ¿Ya tienes una cuenta?{" "}
+            <Link href="/login" className="underline">
+              Iniciar Sesión
+            </Link>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+      <div className="hidden bg-muted lg:block">
+         <img
+          src="/images/dog-cat.jpg" // Reusing the same image
+          alt="Image"
+          width="1920"
+          height="1080"
+          className="h-full w-full object-cover dark:brightness-[0.4] dark:grayscale"
+        />
+      </div>
     </div>
   )
 }

@@ -225,113 +225,83 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 via-blue-50 to-purple-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="mb-6">
-          <Button variant="ghost" asChild className="text-purple-600 hover:text-purple-700">
-            <Link href="/">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver al inicio
-            </Link>
-          </Button>
-        </div>
-
-        <Card className="shadow-xl border-0">
-          <CardHeader className="space-y-1 text-center">
-            <div className="mx-auto w-12 h-12 bg-gradient-to-r from-purple-600 to-blue-600 rounded-full flex items-center justify-center mb-4">
-              <span className="text-white text-xl font-bold">🐾</span>
+    <div className="w-full lg:grid lg:min-h-screen lg:grid-cols-2 xl:min-h-screen">
+      <div className="flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto grid w-[350px] gap-6">
+          <div className="grid gap-2 text-center">
+            <h1 className="text-3xl font-bold">Iniciar Sesión</h1>
+            <p className="text-balance text-muted-foreground">
+              Ingresa tu correo para acceder a tu cuenta
+            </p>
+          </div>
+          <form onSubmit={handleSubmit} className="grid gap-4">
+            <div className="grid gap-2">
+              <div className="flex items-center">
+                <Label htmlFor="email">Correo Electrónico</Label>
+              </div>
+              <Input
+                id="email"
+                type="email"
+                placeholder="m@example.com"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="bg-gray-100 dark:bg-gray-800"
+              />
             </div>
-            <CardTitle className="text-2xl font-bold text-gray-800">
-              {roleParam ? `Accede como ${roleParam}` : "Accede como Usuario"}
-            </CardTitle>
-            <CardDescription className="text-gray-600">Ingresa tus credenciales para continuar</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {error && (
+            <div className="grid gap-2">
+              <div className="flex items-center">
+                <Label htmlFor="password">Contraseña</Label>
+                <Link
+                  href="/forgot-password"
+                  className="ml-auto inline-block text-sm underline"
+                >
+                  ¿Olvidaste tu contraseña?
+                </Link>
+              </div>
+               <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="bg-gray-100 dark:bg-gray-800"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center px-3 text-muted-foreground"
+                >
+                  {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                </button>
+              </div>
+            </div>
+            {error && (
                 <Alert variant="destructive">
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
-              )}
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Correo Electrónico</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="tu@email.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="h-11"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Contraseña</Label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    type={showPassword ? "text" : "password"}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="h-11 pr-10"
-                  />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                    onClick={() => setShowPassword(!showPassword)}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </Button>
-                </div>
-              </div>
-
-              <Button
-                type="submit"
-                className="w-full h-11 bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700"
-                disabled={isLoading}
-              >
-                {isLoading ? "Ingresando..." : "Ingresar"}
-              </Button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                ¿No tienes cuenta?{" "}
-                <Link href="/register" className="text-purple-600 hover:text-purple-700 font-medium">
-                  Regístrate aquí
-                </Link>
-              </p>
-            </div>
-
-            {/* Credenciales de prueba */}
-            <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-              <p className="text-xs text-gray-500 mb-2">Credenciales de prueba:</p>
-              <div className="text-xs text-gray-600 space-y-1">
-                <div>
-                  <strong>Admin:</strong> admin@pethelp.com / admin123
-                </div>
-                <div>
-                  <strong>Usuario:</strong> usuario@pethelp.com / user123
-                </div>
-                <div>
-                  <strong>PetShop:</strong> petshop@pethelp.com / petshop123
-                </div>
-                <div>
-                  <strong>Grooming:</strong> grooming@pethelp.com / grooming123
-                </div>
-                 <div>
-                  <strong>Centro Adopción:</strong> adoption@pethelp.com / adoption123 {/* Added adoption center credentials */}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            )}
+            <Button type="submit" className="w-full" disabled={isLoading || loadingAuth}>
+              {isLoading ? <Loader2Icon className="animate-spin" /> : "Iniciar Sesión"}
+            </Button>
+          </form>
+          <div className="mt-4 text-center text-sm">
+            ¿No tienes una cuenta?{" "}
+            <Link href="/register" className="underline">
+              Regístrate
+            </Link>
+          </div>
+        </div>
+      </div>
+      <div className="hidden bg-muted lg:block">
+        <img
+          src="/images/dog-cat.jpg" // Assuming you have a nice image here
+          alt="Image"
+          width="1920"
+          height="1080"
+          className="h-full w-full object-cover dark:brightness-[0.4] dark:grayscale"
+        />
       </div>
     </div>
   )

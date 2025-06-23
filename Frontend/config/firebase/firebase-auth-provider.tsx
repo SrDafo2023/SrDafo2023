@@ -1,19 +1,22 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Auth, onAuthStateChanged } from 'firebase/auth';
-import { auth } from './firebase';
+import { Auth, onAuthStateChanged, getAuth } from 'firebase/auth';
+import { app } from './firebase';
+
+// Obtener la instancia de Auth directamente aquí
+const auth = getAuth(app);
 
 // Define el tipo para el contexto
 interface FirebaseAuthContextType {
-    auth: Auth | null;
+    auth: Auth;
     loadingAuth: boolean;
     isAuthenticated: boolean;
 }
 
-// Crea el contexto
+// Crea el contexto con un valor inicial que cumple el tipo
 const FirebaseAuthContext = createContext<FirebaseAuthContextType>({
-    auth: null,
+    auth: auth,
     loadingAuth: true,
     isAuthenticated: false,
 });
@@ -27,12 +30,7 @@ export function FirebaseAuthProvider({ children }: { children: React.ReactNode }
     const [isAuthenticated, setIsAuthenticated] = useState(false);
 
     useEffect(() => {
-        // Verificar que auth esté disponible
-        if (!auth) {
-            console.error('Firebase Auth no está inicializado correctamente');
-            setLoadingAuth(false);
-            return;
-        }
+        // La comprobación de !auth ya no es necesaria, porque siempre está disponible.
 
         // Suscribirse a cambios en el estado de autenticación
         const unsubscribe = onAuthStateChanged(auth, (user) => {

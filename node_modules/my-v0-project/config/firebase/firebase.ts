@@ -17,35 +17,24 @@ const firebaseConfig = {
     measurementId: "G-BXTF0Q7P3X"
 };
 
-// Initialize Firebase
-let app: FirebaseApp;
-let auth: Auth;
-let db: Firestore;
-let storage: FirebaseStorage; // Variable para Storage
+// Initialize Firebase for SSR
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
-try {
-    app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-    auth = getAuth(app);
-    db = getFirestore(app);
-    storage = getStorage(app); // Inicializamos Storage
-    console.log('Firebase initialized successfully');
-
-    // Connect to emulators in development
-    if (process.env.NODE_ENV === 'development') {
-        // Uncomment these lines if you want to use Firebase emulators
-        // connectAuthEmulator(auth, 'http://localhost:9099');
-        // connectFirestoreEmulator(db, 'localhost', 8080);
-        // connectStorageEmulator(storage, 'localhost', 9199);
-    }
-} catch (error) {
-    console.error('Error initializing Firebase:', error);
-    throw error;
+// Connect to emulators in development
+if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
+    // Estas conexiones solo se deben hacer en el lado del cliente y en desarrollo
+    // Descomenta si usas los emuladores
+    // try {
+    //   connectAuthEmulator(auth, "http://127.0.0.1:9099");
+    //   connectFirestoreEmulator(db, "127.0.0.1", 8080);
+    //   connectStorageEmulator(storage, "127.0.0.1", 9199);
+    //   console.log("Connected to Firebase emulators");
+    // } catch (e) {
+    //   console.error("Error connecting to Firebase emulators", e);
+    // }
 }
 
-export {
-    app,
-    auth,
-    db,
-    storage, // Exportamos Storage
-    // analytics, // Exportamos Analytics si lo vas a usar
-}; 
+export { app, auth, db, storage }; 

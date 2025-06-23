@@ -20,7 +20,8 @@ import {
   MessageSquare,
   Search,
   Shield,
-  Key
+  Key,
+  FileWarning
 } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
@@ -41,7 +42,7 @@ interface ReportDetails extends Report {
 
 export default function AdminDashboard() {
   // Estados para el modo mantenimiento
-  const [maintenanceMode, setMaintenanceMode] = useState(false)
+  const [isMaintenanceMode, setIsMaintenanceMode] = useState(true)
   
   // Estados para los modales
   const [showAccessLogs, setShowAccessLogs] = useState(false)
@@ -74,6 +75,12 @@ export default function AdminDashboard() {
   // Estado para los reportes
   const [reports, setReports] = useState<ReportDetails[]>([])
   const [isLoadingReports, setIsLoadingReports] = useState(true)
+
+  const cardClasses = "bg-white dark:bg-slate-800/80 dark:border-slate-700"
+  const titleClasses = "text-gray-900 dark:text-white"
+  const descriptionClasses = "text-gray-600 dark:text-slate-400"
+  const textClasses = "text-sm text-gray-700 dark:text-slate-300"
+  const outlineButtonClasses = "dark:text-white dark:border-slate-600 dark:hover:bg-slate-700"
 
   // Función para manejar el envío de notificaciones
   const handleSendNotification = () => {
@@ -154,546 +161,115 @@ export default function AdminDashboard() {
   const resolvedReports = reports.filter(report => report.status === "Resuelto").length
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex justify-center mb-8">
-        <h1 className="text-2xl font-bold">Panel Administrativo</h1>
+    <div className="flex flex-col gap-6">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">Panel Administrativo</h1>
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Panel de Modo Mantenimiento */}
-        <Card>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {/* Maintenance Mode Card */}
+        <Card className={cardClasses}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-yellow-500" />
+            <CardTitle className={`flex items-center gap-2 ${titleClasses}`}>
+              <ShieldAlert className="h-6 w-6 text-yellow-500" />
               Modo Mantenimiento
             </CardTitle>
-            <CardDescription>
-              Activar/desactivar el modo mantenimiento del sitio
-            </CardDescription>
+            <CardDescription className={descriptionClasses}>Activar/desactivar el modo mantenimiento del sitio</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <span className="font-medium">
-                Estado: {maintenanceMode ? 
-                  <Badge variant="destructive">En Mantenimiento</Badge> : 
-                  <Badge variant="default">Activo</Badge>
-                }
-              </span>
-              <Switch
-                checked={maintenanceMode}
-                onCheckedChange={setMaintenanceMode}
-              />
+          <CardContent className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className={`font-medium ${textClasses}`}>Estado:</span>
+              <Badge variant={isMaintenanceMode ? "destructive" : "secondary"}>
+                {isMaintenanceMode ? "Activo" : "Inactivo"}
+              </Badge>
             </div>
-            <p className="text-sm text-muted-foreground mt-4">
-              Al activar el modo mantenimiento, solo los administradores podrán acceder al sitio.
-            </p>
+            <Switch
+              checked={isMaintenanceMode}
+              onCheckedChange={setIsMaintenanceMode}
+              aria-label="Toggle maintenance mode"
+            />
           </CardContent>
         </Card>
 
-        {/* Panel de Gestión de Usuarios */}
-        <Card>
+        {/* User Management Card */}
+        <Card className={cardClasses}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-500" />
-              Gestión de Usuarios
+            <CardTitle className={`flex items-center gap-2 ${titleClasses}`}>
+                <Users className="h-6 w-6" />
+                Gestión de Usuarios
             </CardTitle>
-            <CardDescription>
-              Administrar usuarios y permisos
-            </CardDescription>
+            <CardDescription className={descriptionClasses}>Administrar usuarios y permisos</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <Link href="/dashboard/admin/users">
-              <Button className="w-full">
-                Ver Usuarios
-              </Button>
-            </Link>
-            <div className="text-sm">
-              <p className="font-medium">Usuarios Bloqueados: <span className="text-red-500">3</span></p>
-              <p className="font-medium">Usuarios Activos: <span className="text-green-500">150</span></p>
+            <Button className="w-full bg-purple-600 hover:bg-purple-700">Ver Usuarios</Button>
+            <div className={textClasses}>
+                <p>Usuarios Bloqueados: <span className="font-bold text-red-500">3</span></p>
+                <p>Usuarios Activos: <span className="font-bold text-green-500">150</span></p>
             </div>
           </CardContent>
         </Card>
 
-        {/* Panel de Seguridad */}
-        <Card>
+        {/* Security Card */}
+        <Card className={cardClasses}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <ShieldAlert className="h-5 w-5 text-purple-500" />
-              Seguridad
+             <CardTitle className={`flex items-center gap-2 ${titleClasses}`}>
+                <ShieldAlert className="h-6 w-6" />
+                Seguridad
             </CardTitle>
-            <CardDescription>
-              Configuración de seguridad y accesos
-            </CardDescription>
+            <CardDescription className={descriptionClasses}>Configuración de seguridad y accesos</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => setShowAccessLogs(true)}
-            >
-              Registros de Acceso
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => setShowPermissions(true)}
-            >
-              Configurar Permisos
-            </Button>
+          <CardContent className="flex flex-col gap-2">
+            <Button variant="outline" className={outlineButtonClasses}>Registros de Acceso</Button>
+            <Button variant="outline" className={outlineButtonClasses}>Configurar Permisos</Button>
           </CardContent>
         </Card>
 
-        {/* Panel de Base de Datos */}
-        <Card>
+        {/* Database Card */}
+        <Card className={cardClasses}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Database className="h-5 w-5 text-green-500" />
-              Base de Datos
+             <CardTitle className={`flex items-center gap-2 ${titleClasses}`}>
+                <Database className="h-6 w-6" />
+                Base de Datos
             </CardTitle>
-            <CardDescription>
-              Gestión y respaldo de datos
-            </CardDescription>
+            <CardDescription className={descriptionClasses}>Gestión y respaldo de datos</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => setShowBackup(true)}
-            >
-              Crear Respaldo
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => setShowLogs(true)}
-            >
-              Ver Registros
-            </Button>
+          <CardContent className="flex flex-col gap-2">
+            <Button variant="outline" className={outlineButtonClasses}>Crear Respaldo</Button>
+            <Button variant="outline" className={outlineButtonClasses}>Ver Registros</Button>
           </CardContent>
         </Card>
 
-        {/* Panel de Notificaciones */}
-        <Card>
+        {/* Notifications Card */}
+        <Card className={cardClasses}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Bell className="h-5 w-5 text-orange-500" />
-              Notificaciones
+             <CardTitle className={`flex items-center gap-2 ${titleClasses}`}>
+                <Bell className="h-6 w-6" />
+                Notificaciones
             </CardTitle>
-            <CardDescription>
-              Enviar notificaciones a usuarios
-            </CardDescription>
+            <CardDescription className={descriptionClasses}>Enviar notificaciones a usuarios</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => setShowNotification(true)}
-            >
-              Enviar Notificación
-            </Button>
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => setShowNotificationHistory(true)}
-            >
-              Historial
-            </Button>
+          <CardContent className="flex flex-col gap-2">
+            <Button variant="outline" className={outlineButtonClasses}>Enviar Notificación</Button>
+            <Button variant="outline" className={outlineButtonClasses}>Historial</Button>
           </CardContent>
         </Card>
 
-        {/* Panel de Reportes */}
-        <Card>
+        {/* Reports Card */}
+        <Card className={cardClasses}>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <MessageSquare className="h-5 w-5 text-red-500" />
-              Reportes y Denuncias
-            </CardTitle>
-            <CardDescription>
-              Gestionar reportes de usuarios
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-sm">
-              {isLoadingReports ? (
-                <p>Cargando reportes...</p>
-              ) : (
-                <>
-                  <p className="font-medium">Reportes Pendientes: <span className="text-red-500">{pendingReports}</span></p>
-                  <p className="font-medium">Reportes Resueltos: <span className="text-green-500">{resolvedReports}</span></p>
-                </>
-              )}
-            </div>
-            <Button 
-              variant="outline" 
-              className="w-full"
-              onClick={() => setShowReports(true)}
-            >
-              Ver Reportes
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Modal de Registros de Acceso */}
-        <Dialog open={showAccessLogs} onOpenChange={setShowAccessLogs}>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Search className="h-5 w-5" />
-                Registros de Acceso
-              </DialogTitle>
-              <DialogDescription>
-                Historial de accesos al sistema
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="border rounded-lg p-4">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2">Usuario</th>
-                      <th className="text-left p-2">Fecha</th>
-                      <th className="text-left p-2">IP</th>
-                      <th className="text-left p-2">Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-b">
-                      <td className="p-2">admin@example.com</td>
-                      <td className="p-2">2024-01-20 15:30</td>
-                      <td className="p-2">192.168.1.1</td>
-                      <td className="p-2"><Badge>Exitoso</Badge></td>
-                    </tr>
-                    {/* Más registros aquí */}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Modal de Configuración de Permisos */}
-        <Dialog open={showPermissions} onOpenChange={setShowPermissions}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Shield className="h-5 w-5" />
-                Configuración de Permisos
-              </DialogTitle>
-              <DialogDescription>
-                Gestionar permisos de roles
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="border rounded-lg p-4">
-                <h3 className="font-medium mb-2">Rol: Administrador</h3>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span>Acceso total al sistema</span>
-                    <Switch checked={true} />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Gestión de usuarios</span>
-                    <Switch checked={true} />
-                  </div>
-                </div>
-              </div>
-              {/* Más roles aquí */}
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Modal de Crear Respaldo */}
-        <Dialog open={showBackup} onOpenChange={setShowBackup}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Database className="h-5 w-5" />
-                Crear Respaldo
-              </DialogTitle>
-              <DialogDescription>
-                Crear una copia de seguridad de la base de datos
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="border rounded-lg p-4">
-                <p>¿Estás seguro de que deseas crear un respaldo?</p>
-                <p className="text-sm text-muted-foreground">
-                  Esto puede tomar varios minutos
-                </p>
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowBackup(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={() => {
-                  // Aquí iría la lógica para crear el respaldo
-                  setShowBackup(false)
-                }}>
-                  Crear Respaldo
-                </Button>
-              </DialogFooter>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Modal de Enviar Notificación */}
-        <Dialog open={showNotification} onOpenChange={setShowNotification}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Enviar Notificación
-              </DialogTitle>
-              <DialogDescription>
-                Enviar una notificación a los usuarios
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Título</label>
-                <Input
-                  value={notificationForm.title}
-                  onChange={(e) => setNotificationForm({
-                    ...notificationForm,
-                    title: e.target.value
-                  })}
-                  placeholder="Título de la notificación"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Mensaje</label>
-                <Textarea
-                  value={notificationForm.message}
-                  onChange={(e) => setNotificationForm({
-                    ...notificationForm,
-                    message: e.target.value
-                  })}
-                  placeholder="Escribe el mensaje..."
-                />
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setShowNotification(false)}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleSendNotification}>
-                  Enviar
-                </Button>
-              </DialogFooter>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Modal de Historial de Notificaciones */}
-        <Dialog open={showNotificationHistory} onOpenChange={setShowNotificationHistory}>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Bell className="h-5 w-5" />
-                Historial de Notificaciones
-              </DialogTitle>
-              <DialogDescription>
-                Registro de notificaciones enviadas
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="border rounded-lg p-4">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2">Título</th>
-                      <th className="text-left p-2">Fecha</th>
-                      <th className="text-left p-2">Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr className="border-b">
-                      <td className="p-2">Mantenimiento Programado</td>
-                      <td className="p-2">2024-01-20 15:30</td>
-                      <td className="p-2"><Badge>Enviado</Badge></td>
-                    </tr>
-                    {/* Más notificaciones aquí */}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Modal de Reportes */}
-        <Dialog open={showReports} onOpenChange={setShowReports}>
-          <DialogContent className="max-w-4xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
+            <CardTitle className={`flex items-center gap-2 ${titleClasses}`}>
+                <FileWarning className="h-6 w-6" />
                 Reportes y Denuncias
-              </DialogTitle>
-              <DialogDescription>
-                Gestión de reportes de usuarios
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="border rounded-lg p-4">
-                {isLoadingReports ? (
-                  <p>Cargando reportes...</p>
-                ) : (
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b">
-                        <th className="text-left p-2">Usuario Reportado</th>
-                        <th className="text-left p-2">Motivo</th>
-                        <th className="text-left p-2">Fecha</th>
-                        <th className="text-left p-2">Estado</th>
-                        <th className="text-left p-2">Acciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {reports.map((report) => (
-                        <tr key={report.id} className="border-b">
-                          <td className="p-2">{report.user}</td>
-                          <td className="p-2">{report.reason}</td>
-                          <td className="p-2">{report.date}</td>
-                          <td className="p-2">
-                            <Badge variant={report.status === "Pendiente" ? "destructive" : "default"}>
-                              {report.status}
-                            </Badge>
-                          </td>
-                          <td className="p-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleReviewClick(report)}
-                            >
-                              Revisar
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                )}
-              </div>
+            </CardTitle>
+            <CardDescription className={descriptionClasses}>Gestionar reportes de usuarios</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button variant="outline" className={`w-full ${outlineButtonClasses}`}>Ver Reportes</Button>
+             <div className={textClasses}>
+                <p>Reportes Pendientes: <span className="font-bold text-yellow-500">1</span></p>
+                <p>Reportes Resueltos: <span className="font-bold text-green-500">8</span></p>
             </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Modal de Revisión de Reporte */}
-        <Dialog open={showReviewReport} onOpenChange={setShowReviewReport}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5" />
-                Revisar Reporte #{selectedReport.id}
-              </DialogTitle>
-              <DialogDescription>
-                Detalles del reporte y acciones disponibles
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-6">
-              {/* Información del reporte */}
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Usuario Reportado</label>
-                    <p className="mt-1">{selectedReport.user}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Fecha</label>
-                    <p className="mt-1">{selectedReport.date}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Motivo</label>
-                    <p className="mt-1">{selectedReport.reason}</p>
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Estado Actual</label>
-                    <p className="mt-1">
-                      <Badge variant={selectedReport.status === "Pendiente" ? "destructive" : "default"}>
-                        {selectedReport.status}
-                      </Badge>
-                    </p>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Detalles del Reporte</label>
-                  <p className="mt-1 text-sm">{selectedReport.details}</p>
-                </div>
-
-                {selectedReport.evidence && (
-                  <div>
-                    <label className="text-sm font-medium">Evidencia</label>
-                    <div className="mt-1">
-                      <a 
-                        href={selectedReport.evidence} 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-blue-500 hover:underline text-sm"
-                      >
-                        Ver evidencia adjunta
-                      </a>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Acciones */}
-              <div className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Cambiar Estado</label>
-                  <Select onValueChange={handleStatusChange} defaultValue="pending">
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Seleccionar estado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pendiente</SelectItem>
-                      <SelectItem value="reviewing">En Revisión</SelectItem>
-                      <SelectItem value="resolved">Resuelto</SelectItem>
-                      <SelectItem value="dismissed">Desestimado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium">Notas de Revisión</label>
-                  <Textarea 
-                    className="mt-1"
-                    placeholder="Ingresa notas sobre la revisión del reporte..."
-                  />
-                </div>
-              </div>
-
-              <DialogFooter className="flex justify-between">
-                <div className="flex gap-2">
-                  <Button 
-                    variant="destructive"
-                    onClick={() => handleReportAction("ban")}
-                  >
-                    Banear Usuario
-                  </Button>
-                  <Button 
-                    variant="outline"
-                    onClick={() => handleReportAction("warn")}
-                  >
-                    Enviar Advertencia
-                  </Button>
-                </div>
-                <div className="flex gap-2">
-                  <Button 
-                    variant="outline"
-                    onClick={() => setShowReviewReport(false)}
-                  >
-                    Cancelar
-                  </Button>
-                  <Button 
-                    onClick={() => handleReportAction("save")}
-                  >
-                    Guardar Cambios
-                  </Button>
-                </div>
-              </DialogFooter>
-            </div>
-          </DialogContent>
-        </Dialog>
+          </CardContent>
+        </Card>
       </div>
     </div>
   )

@@ -19,12 +19,16 @@ import {
   Heart,
   Sun,
   Moon,
+  Scissors,
+  Sparkles,
+  Dog,
 } from "lucide-react"
 import { useUser } from "@/hooks/useUser";
 import { Loader2Icon } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useCart } from "@/contexts/cart-context";
 import { useToast } from "@/hooks/use-toast";
+import { AddReviewForm } from "@/components/reviews/AddReviewForm";
 
 export default function Home() {
   const { user, loading } = useUser();
@@ -82,6 +86,33 @@ export default function Home() {
     },
   ]
 
+  const featuredServices = [
+    {
+      name: "Corte y Peinado",
+      description: "Estilo y confort para tu mascota, adaptado a su raza y tipo de pelo.",
+      icon: Scissors,
+      href: "/servicios/corte-peinado",
+    },
+    {
+      name: "Baño y Secado Premium",
+      description: "Limpieza profunda con productos hipoalergénicos de alta calidad.",
+      icon: Sparkles,
+      href: "/servicios/bano-secado",
+    },
+    {
+      name: "Tratamiento Antipulgas",
+      description: "Protección completa para mantener a tu amigo libre de parásitos.",
+      icon: Dog,
+      href: "/servicios/antipulgas",
+    },
+     {
+      name: "Limpieza Dental",
+      description: "Cuidado oral para un aliento fresco y una sonrisa saludable.",
+      icon: Heart,
+      href: "/servicios/limpieza-dental",
+    },
+  ];
+
   const getDashboardPath = (user: any) => {
     switch (user?.userType) {
       case 'adoption-center':
@@ -107,13 +138,13 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-slate-900 transition-colors duration-300">
       {/* Header */}
-      <header className="bg-gradient-to-r from-purple-600 to-blue-600 text-white">
-        <div className="container mx-auto px-4">
+      <header className="bg-gradient-to-r from-purple-600 to-blue-600 text-white sticky top-0 z-50 shadow-md">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           {/* Top Bar */}
-          <div className="flex justify-between items-center py-2 text-sm border-b border-purple-400">
-            <div className="flex items-center gap-6">
+          <div className="flex flex-col sm:flex-row justify-between items-center py-2 text-sm border-b border-purple-400">
+            <div className="flex flex-wrap justify-center items-center gap-x-6 gap-y-2 mb-2 sm:mb-0">
               <div className="flex items-center gap-2">
                 <Phone className="h-4 w-4" />
                 <span>Atención por teléfono: (+56) 2 2760 7777</span>
@@ -166,12 +197,12 @@ export default function Home() {
           </div>
 
           {/* Main Header */}
-          <div className="flex items-center justify-between py-4">
+          <div className="flex flex-col sm:flex-row items-center justify-between py-4 gap-4">
             <Link href="/" className="text-3xl font-bold">
               🐾 PetHelp
             </Link>
 
-            <div className="flex-1 max-w-2xl mx-8">
+            <div className="w-full sm:flex-1 max-w-2xl">
               <div className="relative">
                 <Input
                   placeholder="Busca tus marcas y productos favoritos"
@@ -183,7 +214,7 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-4">
               <Button variant="ghost" size="sm" className="text-white hover:bg-white/20" asChild>
                 <Link href="/favoritos">
                   <Heart className="h-5 w-5" />
@@ -212,33 +243,23 @@ export default function Home() {
                   </Link>
                 </Button>
               )}
-              <Button
-                variant="ghost"
-                size="sm"
-                className="text-white hover:bg-white/20"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              <button
+                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                className="p-2 rounded-full hover:bg-white/20 transition-colors"
+                aria-label="Toggle theme"
               >
-                {theme === 'dark' ? (
-                  <Sun className="h-5 w-5" />
-                ) : (
-                  <Moon className="h-5 w-5" />
-                )}
-                <span className="sr-only">Toggle theme</span>
-              </Button>
+                {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+              </button>
             </div>
           </div>
 
-          {/* Navigation */}
-          <nav className="pb-4">
-            <div className="flex items-center justify-center gap-8 overflow-x-auto">
+          {/* Category Navigation */}
+          <nav className="flex items-center justify-center py-2 overflow-x-auto">
+            <div className="flex items-center gap-4 sm:gap-6">
               {userCategories.map((category) => (
-                <Link
-                  key={category.name}
-                  href={category.href}
-                  className="flex items-center gap-2 text-white hover:text-orange-200 transition-colors whitespace-nowrap"
-                >
-                  <span className="text-lg">{category.icon}</span>
-                  <span className="font-medium">{category.name}</span>
+                <Link key={category.name} href={category.href} className="flex-shrink-0 flex items-center gap-2 text-sm font-medium text-white hover:text-orange-300 transition-colors">
+                  <span>{category.icon}</span>
+                  <span className="hidden md:inline">{category.name}</span>
                 </Link>
               ))}
             </div>
@@ -246,125 +267,121 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="bg-gradient-to-r from-orange-100 to-yellow-100 py-16">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-            <div className="space-y-6">
-              <div>
-                <h1 className="text-6xl font-bold text-gray-800 mb-4">
-                  SEMANA
-                  <br />
-                  <span className="text-orange-600">NATURAL</span>
-                </h1>
-                <p className="mt-2 text-gray-600">Alimentos y snacks saludables para tu mascota.</p>
-              </div>
+      {/* Main Content */}
+      <main>
+        {/* Hero Section */}
+        <section className="bg-yellow-100 dark:bg-yellow-900/50 text-center py-12 px-4 sm:py-20">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-gray-900 dark:text-white">
+            SEMANA <span className="text-orange-500">NATURAL</span>
+          </h1>
+          <p className="mt-4 max-w-2xl mx-auto text-lg sm:text-xl text-gray-600 dark:text-yellow-200/80">
+            Alimentos y snacks saludables para tu mascota.
+          </p>
+        </section>
+
+        {/* Featured Products Section */}
+        <section className="py-12 sm:py-16 bg-gray-50 dark:bg-slate-800/50">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-3xl font-bold text-center mb-12 text-gray-800 dark:text-white">¡Exclusivo web!</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {featuredProducts.map((product, index) => (
+                <Card key={index} className="hover:shadow-lg transition-shadow">
+                  <CardContent className="p-4">
+                    <Link href={`/producto/${index}`} className="block">
+                      <div className="relative mb-4">
+                        <img
+                          src={product.image || "/placeholder.svg"}
+                          alt={product.name}
+                          className="w-full h-48 object-cover rounded-lg"
+                        />
+                        <Badge className="absolute top-2 right-2 bg-red-500 text-white">-{product.discount}</Badge>
+                      </div>
+                      <h3 className="font-semibold text-gray-800 mb-2">{product.name}</h3>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-xl font-bold text-purple-600">{product.price}</span>
+                        <span className="text-sm text-gray-500 line-through">{product.originalPrice}</span>
+                      </div>
+                      <div className="flex items-center gap-1 mb-3">
+                        {[...Array(5)].map((_, i) => (
+                          <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        ))}
+                      </div>
+                    </Link>
+                    <Button className="w-full bg-purple-600 hover:bg-purple-700" onClick={() => handleAddToCart(product)}>
+                      Agregar al carrito
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
             </div>
-
-            <div className="relative">
-              <div className="text-center">
-                <div className="text-gray-600 text-lg mb-2">2da ud.</div>
-                <div className="text-8xl font-bold text-gray-800 mb-2">
-                  30<span className="text-4xl">%</span>
-                </div>
-                <div className="text-2xl font-bold text-gray-800 mb-2">DTO.</div>
-                <div className="text-lg text-gray-600 mb-4">Alimento seco natural</div>
-                <div className="text-sm text-gray-500">Productos seleccionados</div>
-              </div>
-
-              {/* Dog Image Placeholder */}
-              <div className="absolute -bottom-8 left-1/2 transform -translate-x-1/2">
-                <div className="w-64 h-64 bg-orange-200 rounded-full flex items-center justify-center">
-                  <span className="text-6xl">🐕</span>
-                </div>
-              </div>
+            <div className="text-center mt-12">
+              <Button variant="outline" asChild>
+                <Link href="/productos">Ver todos los productos</Link>
+              </Button>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Featured Products */}
-      <section className="py-16 bg-gray-50">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl font-bold text-center mb-12 text-gray-800">¡Exclusivo web!</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {featuredProducts.map((product, index) => (
-              <Card key={index} className="hover:shadow-lg transition-shadow">
-                <CardContent className="p-4">
-                  <Link href={`/producto/${index}`} className="block">
-                    <div className="relative mb-4">
-                      <img
-                        src={product.image || "/placeholder.svg"}
-                        alt={product.name}
-                        className="w-full h-48 object-cover rounded-lg"
-                      />
-                      <Badge className="absolute top-2 right-2 bg-red-500 text-white">-{product.discount}</Badge>
-                    </div>
-                    <h3 className="font-semibold text-gray-800 mb-2">{product.name}</h3>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-xl font-bold text-purple-600">{product.price}</span>
-                      <span className="text-sm text-gray-500 line-through">{product.originalPrice}</span>
-                    </div>
-                    <div className="flex items-center gap-1 mb-3">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                      ))}
-                    </div>
-                  </Link>
-                  <Button className="w-full bg-purple-600 hover:bg-purple-700" onClick={() => handleAddToCart(product)}>
-                    Agregar al carrito
+        {/* Featured Services Section */}
+        <section className="py-12 sm:py-16 bg-white dark:bg-slate-900">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 className="text-3xl font-bold text-center mb-12 text-gray-800 dark:text-white">Nuestros Servicios de Grooming</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+              {featuredServices.map((service, index) => (
+                <Card key={index} className="bg-gray-50 dark:bg-slate-800 text-center p-6 rounded-xl shadow-lg hover:shadow-2xl hover:-translate-y-2 transition-all duration-300">
+                  <div className="mx-auto w-16 h-16 mb-4 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center">
+                    <service.icon className="h-8 w-8 text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <h3 className="text-xl font-bold mb-2 text-gray-900 dark:text-white">{service.name}</h3>
+                  <p className="text-gray-600 dark:text-gray-300 mb-6">{service.description}</p>
+                  <Button asChild className="bg-purple-600 hover:bg-purple-700 dark:bg-purple-500 dark:hover:bg-purple-600">
+                    <Link href={service.href}>Saber más</Link>
                   </Button>
-                </CardContent>
-              </Card>
-            ))}
+                </Card>
+              ))}
+            </div>
           </div>
-          <div className="text-center mt-8">
-            <Button asChild variant="outline" className="border-purple-300 text-purple-700 hover:bg-purple-50">
-              <Link href="/categoria/perros">Ver todos los productos</Link>
-            </Button>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      {/* Services Section */}
-      <section className="py-12 bg-white">
-        <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="flex items-center gap-4 p-4">
-              <Truck className="h-12 w-12 text-purple-600" />
-              <div>
-                <h3 className="font-bold text-gray-800">Despacho Gratis</h3>
-                <p className="text-sm text-gray-600">Por compras mayores a $30.000</p>
+        {/* Review Form Section */}
+        <section className="bg-gray-50 dark:bg-slate-800/50 py-12 sm:py-16">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <AddReviewForm />
+          </div>
+        </section>
+        
+        {/* Features Section */}
+        <section className="bg-gray-100 dark:bg-slate-800">
+          <div className="container mx-auto px-4 py-12 sm:py-16">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+              <div className="flex flex-col items-center gap-3">
+                <Truck className="h-10 w-10 text-purple-600 dark:text-purple-400" />
+                <h3 className="font-bold text-lg text-gray-800 dark:text-white">Despacho Gratis</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Por compras mayores a $30.000</p>
               </div>
-            </div>
-            <div className="flex items-center gap-4 p-4">
-              <Clock className="h-12 w-12 text-purple-600" />
-              <div>
-                <h3 className="font-bold text-gray-800">Delivery Express</h3>
-                <p className="text-sm text-gray-600">Tu pedido en menos de 3 horas</p>
+              <div className="flex flex-col items-center gap-3">
+                <Clock className="h-10 w-10 text-purple-600 dark:text-purple-400" />
+                <h3 className="font-bold text-lg text-gray-800 dark:text-white">Delivery Express</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Tu pedido en menos de 3 horas</p>
               </div>
-            </div>
-            <div className="flex items-center gap-4 p-4">
-              <Store className="h-12 w-12 text-purple-600" />
-              <div>
-                <h3 className="font-bold text-gray-800">Retiro en tienda</h3>
-                <p className="text-sm text-gray-600">¡Gratis!</p>
+              <div className="flex flex-col items-center gap-3">
+                <Store className="h-10 w-10 text-purple-600 dark:text-purple-400" />
+                <h3 className="font-bold text-lg text-gray-800 dark:text-white">Retiro en tienda</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">¡Gratis!</p>
               </div>
-            </div>
-            <div className="flex items-center gap-4 p-4">
-              <Headphones className="h-12 w-12 text-purple-600" />
-              <div>
-                <h3 className="font-bold text-gray-800">Asesoría</h3>
-                <p className="text-sm text-gray-600">Especializada</p>
+              <div className="flex flex-col items-center gap-3">
+                <Headphones className="h-10 w-10 text-purple-600 dark:text-purple-400" />
+                <h3 className="font-bold text-lg text-gray-800 dark:text-white">Asesoría</h3>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Especializada</p>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </main>
 
       {/* Footer */}
-      <footer className="bg-gray-800 text-white py-12">
-        <div className="container mx-auto px-4">
+      <footer className="bg-slate-800 dark:bg-slate-900 text-gray-300">
+        <div className="container mx-auto py-12 px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             <div>
               <h3 className="text-xl font-bold mb-4">🐾 PetHelp</h3>
@@ -430,13 +447,8 @@ export default function Home() {
               </ul>
             </div>
           </div>
-          <div className="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
-            <p>© 2025 PetHelp. Todos los derechos reservados.</p>
-            <p className="mt-2 text-xs">
-              <Link href="/login?role=admin" className="text-gray-500 hover:text-gray-400">
-                Acceso administrativo
-              </Link>
-            </p>
+          <div className="mt-8 pt-8 border-t border-slate-700 text-center text-sm text-gray-400">
+            <p>&copy; {new Date().getFullYear()} PetHelp. Todos los derechos reservados.</p>
           </div>
         </div>
       </footer>
