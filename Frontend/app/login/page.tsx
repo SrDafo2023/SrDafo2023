@@ -21,6 +21,8 @@ import { db } from "@/config/firebase/firebase"
 // import { initializeDefaultUsers, validateCredentials } from "@/lib/user-storage"
 import { Loader2Icon } from "lucide-react"
 import { useFirebaseAuth } from "@/config/firebase/firebase-auth-provider" // Updated import path
+import jsPDF from "jspdf"
+import autoTable from "jspdf-autotable"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -282,7 +284,7 @@ export default function LoginPage() {
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
             )}
-            <Button type="submit" className="w-full" disabled={isLoading || loadingAuth}>
+            <Button type="submit" className="w-full bg-white text-purple-600 border border-purple-600 hover:bg-purple-50" disabled={isLoading || loadingAuth}>
               {isLoading ? <Loader2Icon className="animate-spin" /> : "Iniciar Sesión"}
             </Button>
           </form>

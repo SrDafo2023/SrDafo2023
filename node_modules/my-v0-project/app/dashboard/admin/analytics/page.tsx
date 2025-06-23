@@ -11,7 +11,7 @@ import { format, addDays } from "date-fns"
 import { Calendar } from "@/components/ui/calendar"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { DateRange } from "react-day-picker"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import jsPDF from "jspdf"
 import autoTable from "jspdf-autotable"
@@ -30,11 +30,8 @@ import {
 
 import { ChartContainer } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-
-// Justo después de los imports
-if (typeof window !== "undefined" && autoTable) {
-  (jsPDF as any).autoTable = autoTable;
-}
+import { useUser } from "@/hooks/useUser"
+import { getAuth } from "firebase/auth"
 
 export default function AdminAnalyticsPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -57,6 +54,72 @@ export default function AdminAnalyticsPage() {
     { period: "Semana 3", sales: 390 },
     { period: "Semana 4", sales: 520 },
   ]);
+
+  const { user } = useUser();
+  const [topProducts, setTopProducts] = useState<any[]>([]);
+  const [topServices, setTopServices] = useState<any[]>([]);
+  const [loadingProducts, setLoadingProducts] = useState(false);
+  const [loadingServices, setLoadingServices] = useState(false);
+  const [errorProducts, setErrorProducts] = useState<string | null>(null);
+  const [errorServices, setErrorServices] = useState<string | null>(null);
+
+  // Fetch top products
+  useEffect(() => {
+    const fetchTopProducts = async () => {
+      if (!user) return;
+      setLoadingProducts(true);
+      setErrorProducts(null);
+      try {
+        const auth = getAuth();
+        const currentUser = auth.currentUser;
+        const token = currentUser ? await currentUser.getIdToken() : null;
+        let url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/pethelp-de31a/us-central1/api'}/admin/top-products`;
+        if (dateRange?.from && dateRange?.to) {
+          url += `?startDate=${dateRange.from.toISOString()}&endDate=${dateRange.to.toISOString()}`;
+        }
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("No se pudo obtener el ranking de productos");
+        const data = await res.json();
+        setTopProducts(data);
+      } catch (err: any) {
+        setErrorProducts(err.message || "Error desconocido");
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+    fetchTopProducts();
+  }, [user, dateRange]);
+
+  // Fetch top services
+  useEffect(() => {
+    const fetchTopServices = async () => {
+      if (!user) return;
+      setLoadingServices(true);
+      setErrorServices(null);
+      try {
+        const auth = getAuth();
+        const currentUser = auth.currentUser;
+        const token = currentUser ? await currentUser.getIdToken() : null;
+        let url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/pethelp-de31a/us-central1/api'}/admin/top-services`;
+        if (dateRange?.from && dateRange?.to) {
+          url += `?startDate=${dateRange.from.toISOString()}&endDate=${dateRange.to.toISOString()}`;
+        }
+        const res = await fetch(url, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error("No se pudo obtener el ranking de servicios");
+        const data = await res.json();
+        setTopServices(data);
+      } catch (err: any) {
+        setErrorServices(err.message || "Error desconocido");
+      } finally {
+        setLoadingServices(false);
+      }
+    };
+    fetchTopServices();
+  }, [user, dateRange]);
 
   const handleDownloadPdf = () => {
     console.log("Descargar PDF para el período:", dateRange)
@@ -84,7 +147,7 @@ export default function AdminAnalyticsPage() {
     ];
     const doc = new jsPDF();
     doc.text("Reporte de Servicios de Grooming y Petshop", 14, 16);
-    (doc as any).autoTable({
+    autoTable(doc, {
       startY: 24,
       head: [["Servicio", "Reservas", "Ingresos"]],
       body: serviceData.map(s => [s.service, s.bookings, s.revenue]),
@@ -110,6 +173,58 @@ export default function AdminAnalyticsPage() {
     saveAs(data, `reporte_servicios_excel_${format(dateRange?.from || new Date(), "yyyyMMdd")}_${format(dateRange?.to || new Date(), "yyyyMMdd")}.xlsx`);
     alert("Generando reporte Excel de Servicios...");
   }
+
+  // Exportar productos a PDF
+  const handleExportProductsPdf = () => {
+    const doc = new jsPDF();
+    doc.text("Ranking de Productos Más Comprados", 14, 16);
+    autoTable(doc, {
+      startY: 24,
+      head: [["#", "Producto", "Cantidad vendida"]],
+      body: topProducts.map((prod, idx) => [idx + 1, prod.productName, prod.quantity]),
+    });
+    doc.save(`ranking_productos_${dateRange?.from ? format(dateRange.from, "yyyyMMdd") : ''}_${dateRange?.to ? format(dateRange.to, "yyyyMMdd") : ''}.pdf`);
+  };
+
+  // Exportar productos a Excel
+  const handleExportProductsExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(topProducts.map((prod, idx) => ({
+      "#": idx + 1,
+      "Producto": prod.productName,
+      "Cantidad vendida": prod.quantity,
+    })));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Productos");
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(data, `ranking_productos_${dateRange?.from ? format(dateRange.from, "yyyyMMdd") : ''}_${dateRange?.to ? format(dateRange.to, "yyyyMMdd") : ''}.xlsx`);
+  };
+
+  // Exportar servicios a PDF
+  const handleExportServicesPdf = () => {
+    const doc = new jsPDF();
+    doc.text("Ranking de Servicios Más Solicitados", 14, 16);
+    autoTable(doc, {
+      startY: 24,
+      head: [["#", "Servicio", "Solicitudes"]],
+      body: topServices.map((serv, idx) => [idx + 1, serv.serviceName, serv.count]),
+    });
+    doc.save(`ranking_servicios_${dateRange?.from ? format(dateRange.from, "yyyyMMdd") : ''}_${dateRange?.to ? format(dateRange.to, "yyyyMMdd") : ''}.pdf`);
+  };
+
+  // Exportar servicios a Excel
+  const handleExportServicesExcel = () => {
+    const worksheet = XLSX.utils.json_to_sheet(topServices.map((serv, idx) => ({
+      "#": idx + 1,
+      "Servicio": serv.serviceName,
+      "Solicitudes": serv.count,
+    })));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Servicios");
+    const excelBuffer = XLSX.write(workbook, { bookType: "xlsx", type: "array" });
+    const data = new Blob([excelBuffer], { type: "application/octet-stream" });
+    saveAs(data, `ranking_servicios_${dateRange?.from ? format(dateRange.from, "yyyyMMdd") : ''}_${dateRange?.to ? format(dateRange.to, "yyyyMMdd") : ''}.xlsx`);
+  };
 
   return (
     <div className="flex flex-col">
@@ -486,6 +601,115 @@ export default function AdminAnalyticsPage() {
             </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Ranking de Productos Más Comprados */}
+        <section className="mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Productos más comprados</CardTitle>
+              <CardDescription>Ranking de productos por cantidad vendida</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2 mb-2">
+                <Button variant="outline" onClick={handleExportProductsPdf} disabled={topProducts.length === 0}>Exportar PDF</Button>
+                <Button variant="outline" onClick={handleExportProductsExcel} disabled={topProducts.length === 0}>Exportar Excel</Button>
+              </div>
+              {loadingProducts ? (
+                <p>Cargando productos...</p>
+              ) : errorProducts ? (
+                <p className="text-red-500">{errorProducts}</p>
+              ) : (
+                <>
+                  <div className="overflow-x-auto mb-4">
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr>
+                          <th className="px-2 py-1 text-left">#</th>
+                          <th className="px-2 py-1 text-left">Producto</th>
+                          <th className="px-2 py-1 text-left">Cantidad vendida</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {topProducts.map((prod, idx) => (
+                          <tr key={prod.productId} className="border-b">
+                            <td className="px-2 py-1">{idx + 1}</td>
+                            <td className="px-2 py-1">{prod.productName}</td>
+                            <td className="px-2 py-1 font-bold">{prod.quantity}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={topProducts.slice(0, 10)} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis type="number" dataKey="quantity" />
+                        <YAxis type="category" dataKey="productName" width={150} />
+                        <Tooltip />
+                        <Bar dataKey="quantity" fill="#6366f1" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </section>
+        {/* Ranking de Servicios Más Solicitados */}
+        <section className="mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Servicios más solicitados</CardTitle>
+              <CardDescription>Ranking de servicios por cantidad de solicitudes</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex gap-2 mb-2">
+                <Button variant="outline" onClick={handleExportServicesPdf} disabled={topServices.length === 0}>Exportar PDF</Button>
+                <Button variant="outline" onClick={handleExportServicesExcel} disabled={topServices.length === 0}>Exportar Excel</Button>
+              </div>
+              {loadingServices ? (
+                <p>Cargando servicios...</p>
+              ) : errorServices ? (
+                <p className="text-red-500">{errorServices}</p>
+              ) : (
+                <>
+                  <div className="overflow-x-auto mb-4">
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr>
+                          <th className="px-2 py-1 text-left">#</th>
+                          <th className="px-2 py-1 text-left">Servicio</th>
+                          <th className="px-2 py-1 text-left">Solicitudes</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {topServices.map((serv, idx) => (
+                          <tr key={serv.serviceId} className="border-b">
+                            <td className="px-2 py-1">{idx + 1}</td>
+                            <td className="px-2 py-1">{serv.serviceName}</td>
+                            <td className="px-2 py-1 font-bold">{serv.count}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={topServices.slice(0, 10)} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis type="number" dataKey="count" />
+                        <YAxis type="category" dataKey="serviceName" width={150} />
+                        <Tooltip />
+                        <Bar dataKey="count" fill="#10b981" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </section>
       </main>
     </div>
   )

@@ -325,5 +325,79 @@ app.put("/appointments/:id", async (req: Request, res: Response): Promise<void> 
   }
 });
 
+// --- ENDPOINTS DE REPORTES PARA ADMIN ---
+
+// Productos más comprados con filtro de fechas
+app.get("/admin/top-products", isAdmin, async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate } = req.query;
+    let queryRef: any = db.collection("orders");
+    if (startDate && endDate) {
+      queryRef = queryRef
+        .where("createdAt", ">=", admin.firestore.Timestamp.fromDate(new Date(startDate as string)))
+        .where("createdAt", "<=", admin.firestore.Timestamp.fromDate(new Date(endDate as string)));
+    }
+    const ordersSnapshot = await queryRef.get();
+    const productCount: Record<string, { productId: string, productName: string, quantity: number }> = {};
+
+    ordersSnapshot.forEach((doc: FirebaseFirestore.QueryDocumentSnapshot) => {
+      const order = doc.data();
+      if (Array.isArray(order.items)) {
+        order.items.forEach((item: any) => {
+          if (!productCount[item.productId]) {
+            productCount[item.productId] = {
+              productId: item.productId,
+              productName: item.productName,
+              quantity: 0
+            };
+          }
+          productCount[item.productId].quantity += item.quantity;
+        });
+      }
+    });
+
+    const result = Object.values(productCount).sort((a, b) => b.quantity - a.quantity);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error al obtener productos más comprados:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
+// Servicios más solicitados con filtro de fechas
+app.get("/admin/top-services", isAdmin, async (req: Request, res: Response) => {
+  try {
+    const { startDate, endDate } = req.query;
+    let queryRef: any = db.collection("appointments");
+    if (startDate && endDate) {
+      queryRef = queryRef
+        .where("createdAt", ">=", admin.firestore.Timestamp.fromDate(new Date(startDate as string)))
+        .where("createdAt", "<=", admin.firestore.Timestamp.fromDate(new Date(endDate as string)));
+    }
+    const appointmentsSnapshot = await queryRef.get();
+    const serviceCount: Record<string, { serviceId: string, serviceName: string, count: number }> = {};
+
+    appointmentsSnapshot.forEach((doc: FirebaseFirestore.QueryDocumentSnapshot) => {
+      const appt = doc.data();
+      if (appt.serviceId && appt.serviceName) {
+        if (!serviceCount[appt.serviceId]) {
+          serviceCount[appt.serviceId] = {
+            serviceId: appt.serviceId,
+            serviceName: appt.serviceName,
+            count: 0
+          };
+        }
+        serviceCount[appt.serviceId].count += 1;
+      }
+    });
+
+    const result = Object.values(serviceCount).sort((a, b) => b.count - a.count);
+    res.status(200).json(result);
+  } catch (error) {
+    console.error("Error al obtener servicios más solicitados:", error);
+    res.status(500).json({ error: "Error interno del servidor" });
+  }
+});
+
 // Exportar la API como una sola función
 export const api = functions.https.onRequest(app); 

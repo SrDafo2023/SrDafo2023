@@ -315,6 +315,75 @@ app.put("/appointments/:id", async (req, res) => {
         res.status(500).send("Error interno del servidor");
     }
 });
+// --- ENDPOINTS DE REPORTES PARA ADMIN ---
+// Productos más comprados con filtro de fechas
+app.get("/admin/top-products", isAdmin, async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let queryRef = db.collection("orders");
+        if (startDate && endDate) {
+            queryRef = queryRef
+                .where("createdAt", ">=", admin.firestore.Timestamp.fromDate(new Date(startDate)))
+                .where("createdAt", "<=", admin.firestore.Timestamp.fromDate(new Date(endDate)));
+        }
+        const ordersSnapshot = await queryRef.get();
+        const productCount = {};
+        ordersSnapshot.forEach((doc) => {
+            const order = doc.data();
+            if (Array.isArray(order.items)) {
+                order.items.forEach((item) => {
+                    if (!productCount[item.productId]) {
+                        productCount[item.productId] = {
+                            productId: item.productId,
+                            productName: item.productName,
+                            quantity: 0
+                        };
+                    }
+                    productCount[item.productId].quantity += item.quantity;
+                });
+            }
+        });
+        const result = Object.values(productCount).sort((a, b) => b.quantity - a.quantity);
+        res.status(200).json(result);
+    }
+    catch (error) {
+        console.error("Error al obtener productos más comprados:", error);
+        res.status(500).json({ error: "Error interno del servidor" });
+    }
+});
+// Servicios más solicitados con filtro de fechas
+app.get("/admin/top-services", isAdmin, async (req, res) => {
+    try {
+        const { startDate, endDate } = req.query;
+        let queryRef = db.collection("appointments");
+        if (startDate && endDate) {
+            queryRef = queryRef
+                .where("createdAt", ">=", admin.firestore.Timestamp.fromDate(new Date(startDate)))
+                .where("createdAt", "<=", admin.firestore.Timestamp.fromDate(new Date(endDate)));
+        }
+        const appointmentsSnapshot = await queryRef.get();
+        const serviceCount = {};
+        appointmentsSnapshot.forEach((doc) => {
+            const appt = doc.data();
+            if (appt.serviceId && appt.serviceName) {
+                if (!serviceCount[appt.serviceId]) {
+                    serviceCount[appt.serviceId] = {
+                        serviceId: appt.serviceId,
+                        serviceName: appt.serviceName,
+                        count: 0
+                    };
+                }
+                serviceCount[appt.serviceId].count += 1;
+            }
+        });
+        const result = Object.values(serviceCount).sort((a, b) => b.count - a.count);
+        res.status(200).json(result);
+    }
+    catch (error) {
+        console.error("Error al obtener servicios más solicitados:", error);
+        res.status(500).json({ error: "Error interno del servidor" });
+    }
+});
 // Exportar la API como una sola función
 exports.api = functions.https.onRequest(app);
 //# sourceMappingURL=index.js.map
