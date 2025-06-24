@@ -20,14 +20,15 @@ const verifyFirebaseToken = async (req: express.Request, res: express.Response, 
   try {
     const token = req.headers.authorization?.split('Bearer ')[1];
     if (!token) {
-      return res.status(401).json({ error: 'No token provided' });
+      res.status(401).json({ error: 'No token provided' });
+      return;
     }
 
     const decodedToken = await auth.verifyIdToken(token);
     req.user = decodedToken;
     next();
   } catch (error) {
-    res.status(401).json({ error: 'Invalid token' });
+    res.status(401).json({ error: 'Token inválido' });
   }
 };
 
@@ -35,14 +36,16 @@ const verifyFirebaseToken = async (req: express.Request, res: express.Response, 
 const verifyAdmin = async (req: express.Request, res: express.Response, next: express.NextFunction) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ error: 'User not authenticated' });
+      res.status(401).json({ error: 'User not authenticated' });
+      return;
     }
     
     const userRecord = await auth.getUser(req.user.uid);
     const isAdmin = userRecord.customClaims?.role === 'admin';
     
     if (!isAdmin) {
-      return res.status(403).json({ error: 'Unauthorized' });
+      res.status(403).json({ error: 'No autorizado' });
+      return;
     }
     next();
   } catch (error) {
@@ -54,7 +57,8 @@ const verifyAdmin = async (req: express.Request, res: express.Response, next: ex
 router.post('/register-token', verifyFirebaseToken, async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ error: 'User not authenticated' });
+      res.status(401).json({ error: 'User not authenticated' });
+      return;
     }
     
     const { token } = req.body;
@@ -69,7 +73,8 @@ router.post('/register-token', verifyFirebaseToken, async (req, res) => {
 router.post('/unregister-token', verifyFirebaseToken, async (req, res) => {
   try {
     if (!req.user) {
-      return res.status(401).json({ error: 'User not authenticated' });
+      res.status(401).json({ error: 'User not authenticated' });
+      return;
     }
     
     const { token } = req.body;

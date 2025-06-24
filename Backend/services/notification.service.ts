@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin';
-import { Notification } from '@shared/types/notification.types';
+import { Notification } from '../../shared/types/notification.types';
 
 export class BackendNotificationService {
   private readonly db: admin.firestore.Firestore;
@@ -40,9 +40,8 @@ export class BackendNotificationService {
       });
       console.log(`Token FCM guardado exitosamente para usuario ${userId}`);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       console.error(`Error al guardar token FCM para usuario ${userId}:`, error);
-      throw new Error(`Error al guardar token FCM: ${errorMessage}`);
+      throw new Error(`Error al guardar token FCM: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   }
 
@@ -56,9 +55,8 @@ export class BackendNotificationService {
       });
       console.log(`Token FCM eliminado exitosamente para usuario ${userId}`);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       console.error(`Error al eliminar token FCM para usuario ${userId}:`, error);
-      throw new Error(`Error al eliminar token FCM: ${errorMessage}`);
+      throw new Error(`Error al eliminar token FCM: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   }
 
@@ -134,9 +132,8 @@ export class BackendNotificationService {
         ));
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       console.error('Error al enviar notificación a usuarios:', error);
-      throw new Error(`Error al enviar notificación: ${errorMessage}`);
+      throw new Error(`Error al enviar notificación: ${error instanceof Error ? error.message : 'Error desconocido'}`);
     }
   }
 
@@ -149,7 +146,6 @@ export class BackendNotificationService {
       });
       console.log(`Tokens inválidos eliminados para usuario ${userId}`);
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
       console.error(`Error al eliminar tokens inválidos para usuario ${userId}:`, error);
     }
   }
@@ -269,37 +265,5 @@ export class BackendNotificationService {
       chunks.push(array.slice(i, i + size));
     }
     return chunks;
-  }
-
-  // Método para verificar la validez de un token FCM
-  private async isValidFCMToken(token: string): Promise<boolean> {
-    try {
-      await this.messaging.send({
-        token,
-        data: { test: 'true' },
-      }, true); // dryRun = true
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-
-  // Método para manejar errores de envío de notificaciones
-  private handleSendError(error: any, userIds: string[]): void {
-    console.error('Error al enviar notificación:', {
-      error: error.message,
-      code: error.code,
-      userIds
-    });
-
-    // Registrar el error para análisis posterior
-    this.db.collection('notification_errors').add({
-      error: error.message,
-      code: error.code,
-      userIds,
-      timestamp: admin.firestore.FieldValue.serverTimestamp()
-    }).catch(err => {
-      console.error('Error al registrar el error de notificación:', err);
-    });
   }
 } 

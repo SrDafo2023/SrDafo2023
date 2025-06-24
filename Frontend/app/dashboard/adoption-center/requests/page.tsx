@@ -11,8 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from '@/components/ui/badge';
 import { Loader2Icon, EyeIcon, CheckCircle2, XCircle, Mail, User, Phone } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5001/pethelp/us-central1/api';
+import { buildApiUrl } from '@/config/api';
 
 export default function AdoptionRequestsPage() {
     const { user, loading: isUserLoading } = useUser();
@@ -37,7 +36,7 @@ export default function AdoptionRequestsPage() {
     
     const handleStatusUpdate = async (formId: string, status: 'approved' | 'rejected') => {
         try {
-            const response = await fetch(`${API_URL}/adoption-requests/${formId}`, {
+            const response = await fetch(buildApiUrl(`/adoption-requests/${formId}`), {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ status }),

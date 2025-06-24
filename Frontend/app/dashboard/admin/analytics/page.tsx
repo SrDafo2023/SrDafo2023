@@ -32,6 +32,7 @@ import { ChartContainer } from "@/components/ui/chart";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { useUser } from "@/hooks/useUser"
 import { getAuth } from "firebase/auth"
+import { buildApiUrl, buildApiUrlWithParams } from '@/config/api';
 
 export default function AdminAnalyticsPage() {
   const [dateRange, setDateRange] = useState<DateRange | undefined>({
@@ -73,10 +74,15 @@ export default function AdminAnalyticsPage() {
         const auth = getAuth();
         const currentUser = auth.currentUser;
         const token = currentUser ? await currentUser.getIdToken() : null;
-        let url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/pethelp-de31a/us-central1/api'}/admin/top-products`;
+        
+        let url = buildApiUrl('/admin/top-products');
         if (dateRange?.from && dateRange?.to) {
-          url += `?startDate=${dateRange.from.toISOString()}&endDate=${dateRange.to.toISOString()}`;
+          url = buildApiUrlWithParams('/admin/top-products', {
+            startDate: dateRange.from.toISOString(),
+            endDate: dateRange.to.toISOString()
+          });
         }
+        
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -102,10 +108,15 @@ export default function AdminAnalyticsPage() {
         const auth = getAuth();
         const currentUser = auth.currentUser;
         const token = currentUser ? await currentUser.getIdToken() : null;
-        let url = `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/pethelp-de31a/us-central1/api'}/admin/top-services`;
+        
+        let url = buildApiUrl('/admin/top-services');
         if (dateRange?.from && dateRange?.to) {
-          url += `?startDate=${dateRange.from.toISOString()}&endDate=${dateRange.to.toISOString()}`;
+          url = buildApiUrlWithParams('/admin/top-services', {
+            startDate: dateRange.from.toISOString(),
+            endDate: dateRange.to.toISOString()
+          });
         }
+        
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` },
         });

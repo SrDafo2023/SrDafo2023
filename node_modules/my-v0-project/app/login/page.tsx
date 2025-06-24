@@ -52,6 +52,23 @@ export default function LoginPage() {
     setIsLoading(true)
     setError("")
 
+    // Limpieza de espacios
+    const cleanEmail = email.trim();
+    const cleanPassword = password.trim();
+
+    // Validación básica de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(cleanEmail)) {
+      setError("Por favor, ingresa un correo electrónico válido.");
+      setIsLoading(false);
+      return;
+    }
+    if (cleanPassword.length < 6) {
+      setError("La contraseña debe tener al menos 6 caracteres.");
+      setIsLoading(false);
+      return;
+    }
+
     // Ensure auth is ready before attempting login - Check loadingAuth explicitly
     if (loadingAuth || !auth) {
         console.error("Auth is not ready yet or still loading.");
@@ -62,9 +79,9 @@ export default function LoginPage() {
 
     try {
       // Use Firebase Authentication to sign in with auth from context
-      console.log("Email:", email);
-      console.log("Password:", password);
-      await signInWithEmailAndPassword(auth, email, password);
+      console.log("Email:", cleanEmail);
+      console.log("Password:", cleanPassword);
+      await signInWithEmailAndPassword(auth, cleanEmail, cleanPassword);
 
       // If sign-in is successful, the onAuthStateChanged listener in useUser hook
       // will be triggered, fetch the user's profile, and update the user state.

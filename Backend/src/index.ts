@@ -1,4 +1,4 @@
-import * as functions from "firebase-functions";
+// import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
@@ -13,7 +13,7 @@ app.use(cors({ origin: true }));
 app.use(express.json());
 
 const db = admin.firestore();
-const APPOINTMENTS_COLLECTION = "appointments";
+const APPOINTMENTS_COLLECTION = "grooming_appointments";
 const ADOPTION_FORMS_COLLECTION = "adoptionForms";
 const PETS_COLLECTION = "pets";
 const NOTIFICATIONS_COLLECTION = "notifications";
@@ -79,13 +79,11 @@ const convertTimestampToDate = (data: any) => {
 };
 
 // --- Rutas de la API ---
+const apiRouter = express.Router();
 
-// Define routes
-app.use("/notifications", notificationRoutes);
-
-// Secure endpoint to update a user's role
-// This now uses PATCH for semantic correctness and updates Auth claims.
-app.patch("/users/:userId/role", isAdmin, async (req: Request, res: Response): Promise<void> => {
+// Mueve todas las rutas existentes a apiRouter en vez de app
+apiRouter.use("/notifications", notificationRoutes);
+apiRouter.patch("/users/:userId/role", isAdmin, async (req: Request, res: Response): Promise<void> => {
     try {
         const { userId } = req.params;
         const { role } = req.body;
@@ -107,9 +105,7 @@ app.patch("/users/:userId/role", isAdmin, async (req: Request, res: Response): P
         res.status(500).send({ error: "Internal server error." });
     }
 });
-
-// Create a new subscription
-app.post("/subscriptions", isAuthenticated, async (req: Request, res: Response): Promise<void> => {
+apiRouter.post("/subscriptions", isAuthenticated, async (req: Request, res: Response): Promise<void> => {
     try {
         const { uid } = (req as any).user; // Get UID from authenticated user
         const { planId } = req.body as { planId: 'monthly' | 'yearly' };
@@ -127,9 +123,7 @@ app.post("/subscriptions", isAuthenticated, async (req: Request, res: Response):
         res.status(500).send({ error: "Internal server error during subscription." });
     }
 });
-
-// Crear una solicitud de adopción
-app.post("/adoption-requests", async (req: Request, res: Response): Promise<void> => {
+apiRouter.post("/adoption-requests", async (req: Request, res: Response): Promise<void> => {
     try {
         const { userId, userName, userEmail, petId, answers } = req.body;
 
@@ -184,9 +178,7 @@ app.post("/adoption-requests", async (req: Request, res: Response): Promise<void
         res.status(500).send("Error interno del servidor al procesar la solicitud.");
     }
 });
-
-// Update adoption request status and notify user
-app.patch("/adoption-requests/:formId", async (req: Request, res: Response): Promise<void> => {
+apiRouter.patch("/adoption-requests/:formId", async (req: Request, res: Response): Promise<void> => {
     try {
         const { formId } = req.params;
         const { status } = req.body;
@@ -228,46 +220,156 @@ app.patch("/adoption-requests/:formId", async (req: Request, res: Response): Pro
     }
 });
 
-// Crear una nueva cita
-app.post("/appointments", async (req: Request, res: Response): Promise<void> => {
+// Endpoint para obtener horas ocupadas por servicio y fecha
+apiRouter.get('/appointments/occupied', async (req: Request, res: Response): Promise<void> => {
+  const { serviceId, date } = req.query;
+  if (!serviceId || !date) {
+    res.status(400).json({ error: 'Faltan parámetros: serviceId y date son requeridos.' });
+    return;
+  }
+  try {
+    const start = new Date(date as string);
+    start.setHours(0,0,0,0);
+    const end = new Date(date as string);
+    end.setHours(23,59,59,999);
+    const snapshot = await db.collection(APPOINTMENTS_COLLECTION)
+      .where('serviceId', '==', serviceId)
+      .where('date', '>=', admin.firestore.Timestamp.fromDate(start))
+      .where('date', '<=', admin.firestore.Timestamp.fromDate(end))
+      .get();
+    const hours = snapshot.docs.map(doc => {
+      const d = doc.data().date.toDate();
+      return d.toTimeString().slice(0,5); // 'HH:MM'
+    });
+    res.json({ occupied: hours });
+    return;
+  } catch (error) {
+    console.error('Error al obtener horas ocupadas:', error);
+    res.status(500).json({ error: 'Error interno del servidor' });
+    return;
+  }
+});
+
+// Crear una nueva cita con validaciones robustas
+apiRouter.post("/appointments", async (req: Request, res: Response): Promise<void> => {
   try {
     const { clientId, petId, serviceId, date, notes } = req.body;
-    
-    // Validar datos de entrada
     if (!clientId || !petId || !serviceId || !date) {
-      res.status(400).send("Faltan campos requeridos.");
+      res.status(400).json({ error: "Faltan campos requeridos: clientId, petId, serviceId, date." });
       return;
     }
-
+    // Validar existencia de cliente
+    const clientDoc = await db.collection('users').doc(clientId).get();
+    if (!clientDoc.exists) {
+      res.status(404).json({ error: "El cliente no existe." });
+      return;
+    }
+    // Validar existencia de mascota
+    const petDoc = await db.collection('pets').doc(petId).get();
+    if (!petDoc.exists) {
+      res.status(404).json({ error: "La mascota no existe." });
+      return;
+    }
+    // Validar existencia de servicio (puedes mejorar esto si tienes una colección de servicios)
+    // const serviceDoc = await db.collection('services').doc(serviceId).get();
+    // if (!serviceDoc.exists) {
+    //   res.status(404).json({ error: "El servicio no existe." });
+    //   return;
+    // }
+    // Validar solapamiento de hora
+    const appointmentDate = new Date(date);
+    const start = new Date(appointmentDate);
+    start.setSeconds(0,0);
+    const end = new Date(appointmentDate);
+    end.setSeconds(59,999);
+    const overlapSnapshot = await db.collection(APPOINTMENTS_COLLECTION)
+      .where('serviceId', '==', serviceId)
+      .where('date', '>=', admin.firestore.Timestamp.fromDate(start))
+      .where('date', '<=', admin.firestore.Timestamp.fromDate(end))
+      .get();
+    if (!overlapSnapshot.empty) {
+      res.status(409).json({ error: "La hora seleccionada ya está ocupada para este servicio." });
+      return;
+    }
     const now = admin.firestore.Timestamp.now();
-    const appointmentDate = admin.firestore.Timestamp.fromDate(new Date(date));
-    
+    const appointmentFirestoreDate = admin.firestore.Timestamp.fromDate(appointmentDate);
     const appointmentData = {
       clientId,
       petId,
       serviceId,
-      date: appointmentDate,
+      date: appointmentFirestoreDate,
       notes: notes || "",
       status: "pending",
       createdAt: now,
       updatedAt: now,
     };
-    
     const docRef = await db.collection(APPOINTMENTS_COLLECTION).add(appointmentData);
     res.status(201).send({ id: docRef.id, ...appointmentData });
   } catch (error) {
     console.error("Error al crear la cita:", error);
-    res.status(500).send("Error interno del servidor");
+    res.status(500).json({ error: "Error interno del servidor" });
   }
 });
 
 // Obtener todas las citas
-app.get("/appointments", async (req: Request, res: Response): Promise<void> => {
+apiRouter.get("/appointments", async (req: Request, res: Response): Promise<void> => {
   try {
     const snapshot = await db.collection(APPOINTMENTS_COLLECTION).orderBy("date", "asc").get();
-    const appointments = snapshot.docs.map(doc => ({
+    const appointmentsRaw = snapshot.docs.map(doc => ({
       id: doc.id,
       ...convertTimestampToDate(doc.data()),
+    }));
+
+    // Obtener todos los clientId, petId y serviceId únicos
+    const clientIds = [...new Set(appointmentsRaw.map(a => a.clientId))];
+    const petIds = [...new Set(appointmentsRaw.map(a => a.petId))];
+    const serviceIds = [...new Set(appointmentsRaw.map(a => a.serviceId))];
+
+    // Batch fetch de usuarios
+    const clientDocs = await db.getAll(...clientIds.map(id => db.collection('users').doc(id)));
+    const clientsMap = Object.fromEntries(clientDocs.map(doc => {
+      let name = '';
+      if (doc.exists && typeof doc.data === 'function') {
+        const data = doc.data();
+        if (data) name = data.name || data.displayName || '';
+      }
+      return [doc.id, name];
+    }));
+
+    // Batch fetch de mascotas
+    const petDocs = await db.getAll(...petIds.map(id => db.collection('pets').doc(id)));
+    const petsMap = Object.fromEntries(petDocs.map(doc => {
+      let name = '';
+      if (doc.exists && typeof doc.data === 'function') {
+        const data = doc.data();
+        if (data) name = data.name || '';
+      }
+      return [doc.id, name];
+    }));
+
+    // Batch fetch de servicios (si existe la colección)
+    let servicesMap: Record<string, string> = {};
+    try {
+      const serviceDocs = await db.getAll(...serviceIds.map(id => db.collection('services').doc(id)));
+      servicesMap = Object.fromEntries(serviceDocs.map(doc => {
+        let name = '';
+        if (doc.exists && typeof doc.data === 'function') {
+          const data = doc.data();
+          if (data) name = data.name || '';
+        }
+        return [doc.id, name];
+      }));
+    } catch (e) {
+      // Si no existe la colección, dejar los nombres vacíos
+      servicesMap = Object.fromEntries(serviceIds.map(id => [id, '']))
+    }
+
+    // Enriquecer las citas
+    const appointments = appointmentsRaw.map(appt => ({
+      ...appt,
+      clientName: clientsMap[appt.clientId] || '',
+      petName: petsMap[appt.petId] || '',
+      serviceName: servicesMap[appt.serviceId] || '',
     }));
     res.status(200).send(appointments);
   } catch (error) {
@@ -277,7 +379,7 @@ app.get("/appointments", async (req: Request, res: Response): Promise<void> => {
 });
 
 // Obtener citas por rango de fechas
-app.get('/appointments/range', async (req: Request, res: Response): Promise<void> => {
+apiRouter.get('/appointments/range', async (req: Request, res: Response): Promise<void> => {
   try {
     const { startDate, endDate } = req.query;
     if (!startDate || !endDate) {
@@ -290,9 +392,61 @@ app.get('/appointments/range', async (req: Request, res: Response): Promise<void
       .orderBy("date", "asc")
       .get();
 
-    const appointments = snapshot.docs.map(doc => ({
+    const appointmentsRaw = snapshot.docs.map(doc => ({
       id: doc.id,
       ...convertTimestampToDate(doc.data()),
+    }));
+
+    // Obtener todos los clientId, petId y serviceId únicos
+    const clientIds = [...new Set(appointmentsRaw.map(a => a.clientId))];
+    const petIds = [...new Set(appointmentsRaw.map(a => a.petId))];
+    const serviceIds = [...new Set(appointmentsRaw.map(a => a.serviceId))];
+
+    // Batch fetch de usuarios
+    const clientDocs = await db.getAll(...clientIds.map(id => db.collection('users').doc(id)));
+    const clientsMap = Object.fromEntries(clientDocs.map(doc => {
+      let name = '';
+      if (doc.exists && typeof doc.data === 'function') {
+        const data = doc.data();
+        if (data) name = data.name || data.displayName || '';
+      }
+      return [doc.id, name];
+    }));
+
+    // Batch fetch de mascotas
+    const petDocs = await db.getAll(...petIds.map(id => db.collection('pets').doc(id)));
+    const petsMap = Object.fromEntries(petDocs.map(doc => {
+      let name = '';
+      if (doc.exists && typeof doc.data === 'function') {
+        const data = doc.data();
+        if (data) name = data.name || '';
+      }
+      return [doc.id, name];
+    }));
+
+    // Batch fetch de servicios (si existe la colección)
+    let servicesMap: Record<string, string> = {};
+    try {
+      const serviceDocs = await db.getAll(...serviceIds.map(id => db.collection('services').doc(id)));
+      servicesMap = Object.fromEntries(serviceDocs.map(doc => {
+        let name = '';
+        if (doc.exists && typeof doc.data === 'function') {
+          const data = doc.data();
+          if (data) name = data.name || '';
+        }
+        return [doc.id, name];
+      }));
+    } catch (e) {
+      // Si no existe la colección, dejar los nombres vacíos
+      servicesMap = Object.fromEntries(serviceIds.map(id => [id, '']))
+    }
+
+    // Enriquecer las citas
+    const appointments = appointmentsRaw.map(appt => ({
+      ...appt,
+      clientName: clientsMap[appt.clientId] || '',
+      petName: petsMap[appt.petId] || '',
+      serviceName: servicesMap[appt.serviceId] || '',
     }));
     res.status(200).send(appointments);
   } catch (error) {
@@ -303,7 +457,7 @@ app.get('/appointments/range', async (req: Request, res: Response): Promise<void
 
 
 // Actualizar una cita
-app.put("/appointments/:id", async (req: Request, res: Response): Promise<void> => {
+apiRouter.put("/appointments/:id", async (req: Request, res: Response): Promise<void> => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -325,10 +479,8 @@ app.put("/appointments/:id", async (req: Request, res: Response): Promise<void> 
   }
 });
 
-// --- ENDPOINTS DE REPORTES PARA ADMIN ---
-
 // Productos más comprados con filtro de fechas
-app.get("/admin/top-products", isAdmin, async (req: Request, res: Response) => {
+apiRouter.get("/admin/top-products", isAdmin, async (req: Request, res: Response) => {
   try {
     const { startDate, endDate } = req.query;
     let queryRef: any = db.collection("orders");
@@ -365,7 +517,7 @@ app.get("/admin/top-products", isAdmin, async (req: Request, res: Response) => {
 });
 
 // Servicios más solicitados con filtro de fechas
-app.get("/admin/top-services", isAdmin, async (req: Request, res: Response) => {
+apiRouter.get("/admin/top-services", isAdmin, async (req: Request, res: Response) => {
   try {
     const { startDate, endDate } = req.query;
     let queryRef: any = db.collection("appointments");
@@ -399,5 +551,12 @@ app.get("/admin/top-services", isAdmin, async (req: Request, res: Response) => {
   }
 });
 
-// Exportar la API como una sola función
-export const api = functions.https.onRequest(app); 
+// Finalmente, monta el apiRouter bajo la ruta base
+app.use('/pethelp-a4e95/us-central1/api', apiRouter);
+
+// Inicia el servidor en el puerto 5001 si se ejecuta directamente (no en Firebase Functions)
+if (require.main === module) {
+  app.listen(5001, () => {
+    console.log('Servidor Express escuchando en http://localhost:5001/pethelp-a4e95/us-central1/api');
+  });
+} 

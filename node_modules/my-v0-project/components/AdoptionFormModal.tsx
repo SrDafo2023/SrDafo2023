@@ -7,9 +7,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { AdoptionForm } from './AdoptionForm';
-
-// La URL base de tu API de Cloud Functions
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5001/pethelp/us-central1/api';
+import { buildApiUrl } from '@/config/api';
 
 interface AdoptionFormModalProps {
     pet: Pet;
@@ -30,7 +28,7 @@ export function AdoptionFormModal({ pet, children }: AdoptionFormModalProps) {
 
         setIsSubmitting(true);
         try {
-            const response = await fetch(`${API_URL}/adoption-requests`, {
+            const response = await fetch(buildApiUrl('/adoption-requests'), {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

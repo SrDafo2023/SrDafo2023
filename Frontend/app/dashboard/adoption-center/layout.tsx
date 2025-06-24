@@ -17,9 +17,13 @@ import {
   ClipboardCheck,
   Sun,
   Moon,
+  LogOut,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTheme } from "next-themes"
+import { signOut } from "firebase/auth"
+import { useRouter } from "next/navigation"
+import { useFirebaseAuth } from "@/config/firebase/firebase-auth-provider"
 
 const sidebarItems = [
     { title: "Dashboard", href: "/dashboard/adoption-center", icon: Home },
@@ -32,28 +36,45 @@ const sidebarItems = [
 export default function AdoptionCenterLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const { theme, setTheme } = useTheme();
+  const router = useRouter();
+  const { auth } = useFirebaseAuth();
 
-  const SidebarNav = ({ className }: { className?: string }) => (
-    <nav className={cn("flex flex-col text-lg font-medium", className)}>
-      <Link href="#" className="flex items-center gap-2 text-lg font-semibold mb-4 text-foreground">
-        <Package2 className="h-6 w-6 text-primary" />
-        <span>Centro de Adopción</span>
-      </Link>
-      {sidebarItems.map((item) => (
-        <Link
-          key={item.title}
-          href={item.href}
-          className={cn(
-            "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:bg-accent hover:text-accent-foreground",
-            pathname === item.href ? "bg-card text-primary" : "text-muted-foreground"
-          )}
-        >
-          <item.icon className="h-4 w-4" />
-          {item.title}
+  const SidebarNav = ({ className }: { className?: string }) => {
+    const handleSignOut = async () => {
+      await signOut(auth);
+      router.push("/auth");
+    };
+    return (
+      <nav className={cn("flex flex-col text-lg font-medium h-full", className)}>
+        <Link href="#" className="flex items-center gap-2 text-lg font-semibold mb-4 text-foreground">
+          <Package2 className="h-6 w-6 text-primary" />
+          <span>Centro de Adopción</span>
         </Link>
-      ))}
-    </nav>
-  )
+        {sidebarItems.map((item) => (
+          <Link
+            key={item.title}
+            href={item.href}
+            className={cn(
+              "flex items-center gap-3 rounded-lg px-3 py-2 transition-all hover:bg-accent hover:text-accent-foreground",
+              pathname === item.href ? "bg-card text-primary" : "text-muted-foreground"
+            )}
+          >
+            <item.icon className="h-4 w-4" />
+            {item.title}
+          </Link>
+        ))}
+        <div className="flex-1" />
+        <button
+          onClick={handleSignOut}
+          className="flex items-center gap-3 rounded-lg px-3 py-2 mt-4 text-red-600 hover:bg-red-50 hover:text-red-700 transition-all"
+          style={{ outline: "none", border: "none", background: "none", cursor: "pointer" }}
+        >
+          <LogOut className="h-4 w-4" />
+          Cerrar Sesión
+        </button>
+      </nav>
+    );
+  }
 
   return (
     <div className="grid min-h-screen w-full md:grid-cols-[220px_1fr] lg:grid-cols-[280px_1fr]">

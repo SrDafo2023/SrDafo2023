@@ -3,9 +3,9 @@ import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, Firestor
 import { app, db } from '@/config/firebase/firebase';
 import type { Notification } from '@/types/notification.types';
 import type { FirebaseApp } from 'firebase/app';
+import { buildApiUrl } from '@/config/api';
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY;
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
 class NotificationService {
   private messaging: Messaging | undefined;
@@ -63,13 +63,8 @@ class NotificationService {
 
   // Registrar el token con el backend
   private async registerTokenWithBackend(fcmToken: string, userToken: string): Promise<void> {
-    if (!API_URL) {
-      console.warn('API_URL no configurada');
-      return;
-    }
-
     try {
-      const response = await fetch(`${API_URL}/api/notifications/register-token`, {
+      const response = await fetch(buildApiUrl('/api/notifications/register-token'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -150,14 +145,12 @@ class NotificationService {
         readAt: new Date().toISOString()
       });
 
-      if (API_URL) {
-        await fetch(`${API_URL}/api/notifications/${notificationId}/mark-read`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${userToken}`
-          }
-        });
-      }
+      await fetch(buildApiUrl(`/api/notifications/${notificationId}/mark-read`), {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${userToken}`
+        }
+      });
     } catch (error) {
       console.error('Error al marcar notificación como leída:', error);
     }

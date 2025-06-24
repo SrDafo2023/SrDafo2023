@@ -3,15 +3,12 @@ import {
   CreateAppointmentDTO,
   UpdateAppointmentDTO,
 } from "@/types/appointment.types"
-
-// Esta URL será la de tu función desplegada. 
-// Para desarrollo local con el emulador, será una URL local.
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/pethelp-de31a/us-central1/api';
+import { buildApiUrl, buildApiUrlWithParams } from "@/config/api";
 
 export const appointmentService = {
   // Obtener todas las citas
   async getAll(): Promise<Appointment[]> {
-    const response = await fetch(`${API_URL}/appointments`);
+    const response = await fetch(buildApiUrl('/appointments'));
     if (!response.ok) {
       throw new Error('Error al obtener las citas');
     }
@@ -78,7 +75,10 @@ export const appointmentService = {
     // --- CÓDIGO REAL DE CONEXIÓN AL BACKEND (TEMPORALMENTE DESACTIVADO) ---
     try {
       const response = await fetch(
-        `${API_URL}/appointments/range?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`
+        buildApiUrlWithParams('/appointments/range', {
+          startDate: startDate.toISOString(),
+          endDate: endDate.toISOString()
+        })
       );
       if (!response.ok) {
         throw new Error('No se pudieron obtener las citas');
@@ -100,7 +100,7 @@ export const appointmentService = {
 
   // Obtener una cita por ID
   async getById(id: string): Promise<Appointment | null> {
-    const response = await fetch(`${API_URL}/appointments/${id}`);
+    const response = await fetch(buildApiUrl(`/appointments/${id}`));
     if (!response.ok) {
       if (response.status === 404) {
         return null;
@@ -118,7 +118,7 @@ export const appointmentService = {
 
   // Crear una nueva cita
   async create(appointmentData: CreateAppointmentDTO): Promise<Appointment> {
-    const response = await fetch(`${API_URL}/appointments`, {
+    const response = await fetch(buildApiUrl('/appointments'), {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -139,7 +139,7 @@ export const appointmentService = {
 
   // Actualizar una cita
   async update(appointmentData: UpdateAppointmentDTO): Promise<void> {
-    const response = await fetch(`${API_URL}/appointments/${appointmentData.id}`, {
+    const response = await fetch(buildApiUrl(`/appointments/${appointmentData.id}`), {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -153,7 +153,7 @@ export const appointmentService = {
 
   // Obtener citas por cliente
   async getByClientId(clientId: string): Promise<Appointment[]> {
-    const response = await fetch(`${API_URL}/appointments/client/${clientId}`);
+    const response = await fetch(buildApiUrl(`/appointments/client/${clientId}`));
     if (!response.ok) {
       throw new Error('Error al obtener las citas del cliente');
     }

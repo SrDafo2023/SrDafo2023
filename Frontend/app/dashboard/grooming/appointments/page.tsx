@@ -65,10 +65,13 @@ export default function AppointmentsPage() {
   }
 
   const filteredAppointments = appointments.filter(appointment => {
-    const matchesSearch = 
-      appointment.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      appointment.petName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      appointment.serviceName.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch =
+      (appointment.clientName?.toLowerCase() || "")
+        .includes(searchTerm.toLowerCase()) ||
+      (appointment.petName?.toLowerCase() || "")
+        .includes(searchTerm.toLowerCase()) ||
+      (appointment.serviceName?.toLowerCase() || "")
+        .includes(searchTerm.toLowerCase())
     
     const matchesStatus = statusFilter === "all" || appointment.status === statusFilter
 

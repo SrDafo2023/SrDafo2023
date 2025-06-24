@@ -2,11 +2,7 @@ import { db } from '@/config/firebase/firebase'; // Import the Firestore instanc
 import { collection, getDocs, addDoc, doc, setDoc, getDoc, query, where, updateDoc, deleteDoc, serverTimestamp, DocumentData } from 'firebase/firestore'; // Import Firestore functions
 import { type AppUser } from '@/hooks/useUser'; // Importar la interfaz unificada
 import { getAuth } from 'firebase/auth';
-
-// --- API Configuration ---
-// Hardcoding the local API URL for development since .env file is problematic.
-// For production, this should be an environment variable.
-const apiUrl = 'http://127.0.0.1:5001/pethelp-a4e95/us-central1/api';
+import { buildApiUrl } from '@/config/api';
 
 // Tipos simplificados para este módulo
 type UserRole = AppUser['userType'];
@@ -280,10 +276,6 @@ export async function updateUserProfile(userId: string, data: Partial<Omit<AppUs
  * @param role The new role to assign.
  */
 export async function updateUserRole(userId: string, role: UserRole): Promise<void> {
-  if (!apiUrl) {
-    throw new Error("La URL de la API no está configurada.");
-  }
-
   const auth = getAuth();
   const currentUser = auth.currentUser;
 
@@ -293,7 +285,7 @@ export async function updateUserRole(userId: string, role: UserRole): Promise<vo
 
   const token = await currentUser.getIdToken();
 
-  const response = await fetch(`${apiUrl}/users/${userId}/role`, {
+  const response = await fetch(buildApiUrl(`/users/${userId}/role`), {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
