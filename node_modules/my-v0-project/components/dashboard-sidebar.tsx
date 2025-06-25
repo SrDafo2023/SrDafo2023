@@ -231,19 +231,18 @@ export function DashboardSidebar({ userRole, userName }: DashboardSidebarProps) 
                 )
               })}
             </ul>
+            {/* Botón de cerrar sesión SIEMPRE visible debajo del menú */}
+            <div className="mt-6">
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-red-500 hover:bg-red-900 hover:text-red-400"
+                onClick={handleSignOut}
+              >
+                <LogOutIcon className="mr-2 h-4 w-4" />
+                Cerrar sesión
+              </Button>
+            </div>
           </nav>
-
-          {/* Sidebar Footer */}
-          <div className="p-4 border-t border-gray-700">
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-red-500 hover:bg-red-900 hover:text-red-400"
-              onClick={handleSignOut}
-            >
-              <LogOutIcon className="mr-2 h-4 w-4" />
-              Cerrar sesión
-            </Button>
-          </div>
         </div>
       </div>
     </>

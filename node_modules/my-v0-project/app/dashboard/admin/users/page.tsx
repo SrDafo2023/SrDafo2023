@@ -24,6 +24,8 @@ import { getUsers, updateUser, deleteUser, createUser, type User, updateUserRole
 import { type AppUser } from '@/hooks/useUser'
 import { useToast } from '@/components/ui/use-toast'
 import { DashboardHeader } from '@/components/dashboard-header'
+import { useFirebaseAuth } from "@/config/firebase/firebase-auth-provider"
+import { getIdToken } from "firebase/auth"
 
 export default function UsersPage() {
   const [users, setUsers] = useState<AppUser[]>([])
@@ -41,21 +43,32 @@ export default function UsersPage() {
   const [selectedRole, setSelectedRole] = useState<AppUser['userType'] | ''>('')
   const [isUpdating, setIsUpdating] = useState(false)
   const { toast } = useToast()
+  const { auth, loadingAuth } = useFirebaseAuth()
 
-  // Cargar usuarios desde Firebase al montar
   useEffect(() => {
-    loadUsers()
-  }, [toast])
+    if (!loadingAuth && auth.currentUser) {
+      loadUsers()
+    }
+  }, [loadingAuth, auth.currentUser])
 
   const loadUsers = async () => {
     try {
       setLoading(true)
-      const fetchedUsers = await getUsers()
-      setUsers(fetchedUsers)
-      setApiError(null)
+      const token = await getIdToken(auth.currentUser)
+      const res = await fetch("/api/users", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setUsers(data.users || [])
+        setApiError(null)
+      } else {
+        setApiError(data.error || "No se pudo cargar la lista de usuarios.")
+      }
     } catch (error) {
       setApiError("No se pudo cargar la lista de usuarios.")
-      toast({ title: 'Error', description: 'No se pudieron cargar los usuarios.', variant: 'destructive' })
     } finally {
       setLoading(false)
     }

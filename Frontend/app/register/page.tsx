@@ -159,6 +159,30 @@ export default function RegisterPage() {
           </div>
           <form onSubmit={handleSubmit} className="grid gap-4">
             <div className="grid gap-2">
+              <Label htmlFor="firstName">Nombre</Label>
+              <Input
+                id="firstName"
+                type="text"
+                placeholder="Tu nombre"
+                required
+                value={formData.firstName}
+                onChange={(e) => handleInputChange("firstName", e.target.value)}
+                className="bg-gray-100 dark:bg-gray-800"
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="lastName">Apellido</Label>
+              <Input
+                id="lastName"
+                type="text"
+                placeholder="Tu apellido"
+                required
+                value={formData.lastName}
+                onChange={(e) => handleInputChange("lastName", e.target.value)}
+                className="bg-gray-100 dark:bg-gray-800"
+              />
+            </div>
+            <div className="grid gap-2">
               <Label htmlFor="email">Correo Electrónico</Label>
               <Input
                 id="email"

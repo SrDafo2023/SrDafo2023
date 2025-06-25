@@ -28,9 +28,8 @@ import { DropdownMenu, DropdownMenuTrigger } from "@/components/ui/dropdown-menu
 const sidebarItems = [
     { title: "Dashboard", href: "/dashboard/admin", icon: Home },
     { title: "Pedidos", href: "/dashboard/admin/orders", icon: ShoppingCart },
-    { title: "Productos", href: "/dashboard/admin/products", icon: Package },
     { title: "Usuarios", href: "/dashboard/admin/users", icon: Users },
-    { title: "Analíticas", href: "/dashboard/admin/analytics", icon: LineChart },
+    { title: "Reportes", href: "/dashboard/admin/analytics", icon: LineChart },
     { title: "Configuración", href: "/dashboard/admin/settings", icon: Settings },
 ]
 
@@ -87,7 +86,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           className="flex items-center gap-3 rounded-lg px-3 py-2 text-gray-700 dark:text-gray-200 transition-all hover:text-primary dark:hover:text-primary"
         >
           <LineChart className="h-4 w-4" />
-          Analíticas
+          Reportes
         </Link>
         <Link
           href="/dashboard/admin/settings"

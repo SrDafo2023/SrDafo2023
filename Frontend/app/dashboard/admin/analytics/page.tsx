@@ -242,7 +242,7 @@ export default function AdminAnalyticsPage() {
       <main className="flex-1 space-y-4 p-4 md:p-6">
         <div className="flex items-center justify-between">
           <div className="space-y-1">
-            <h2 className="text-2xl font-bold tracking-tight">Estadísticas</h2>
+            <h2 className="text-2xl font-bold tracking-tight">Reportes</h2>
             <p className="text-muted-foreground">Análisis completo del rendimiento del sistema</p>
           </div>
           <div className="flex items-center gap-2">
