@@ -27,5 +27,3 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# Ignorar credenciales de Firebase
-Frontend/firebase-service-account.json
