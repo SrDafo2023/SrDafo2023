@@ -14,7 +14,8 @@ APIs, automatización de procesos y soluciones digitales.
     <img src="https://img.shields.io/badge/GitHub-181717?style=for-the-badge&logo=github&logoColor=white](https://github.com/SrDafo2023" alt="GitHub"/>
   </a>
   <a href="TU_LINKEDIN">
-    <img src="https://www.linkedin.com/in/diego-far%C3%ADas-opazo-4a5a651a3?utm_source=share_via&utm_content=profile&utm_medium=member_ios" alt="LinkedIn"/>
+     <img src="https://img.shields.io/badge/LinkedIn-181717?style=for-the-badge&logo=linkedIn&logoColor=white](https://www.linkedin.com/in/diego-far%C3%ADas-opazo-4a5a651a3/" alt="LinkedIn"/>
+   
   </a>
 </p>
 
